@@ -151,3 +151,52 @@ export function formatResetTime(targetTime: number): string {
   const dateString = target.toLocaleDateString([], { month: 'short', day: 'numeric' });
   return `${dateString} at ${timeString}`;
 }
+
+/**
+ * Formats a timestamp into a verbose countdown string (e.g. "1 day 2 hours 32 minutes")
+ */
+export function formatVerboseCountdown(targetTime: number, now: number = Date.now()): string {
+  const diff = targetTime - now;
+  if (diff <= 0) return '0 minutes';
+
+  const seconds = Math.floor((diff / 1000) % 60);
+  const minutes = Math.floor((diff / (1000 * 60)) % 60);
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  const parts: string[] = [];
+
+  if (days > 0) {
+    parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
+  }
+  if (hours > 0) {
+    parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+  }
+  if (minutes > 0 || (days === 0 && hours === 0)) {
+    parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+  }
+  if (days === 0 && hours === 0 && minutes === 0 && seconds > 0) {
+    parts.push(`${seconds} ${seconds === 1 ? 'second' : 'seconds'}`);
+  }
+
+  return parts.join(' ');
+}
+
+/**
+ * Formats a timestamp into a strict date format like "25 July 2026 4:24"
+ */
+export function formatVerboseResetTime(targetTime: number): string {
+  const target = new Date(targetTime);
+  const day = target.getDate();
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const month = months[target.getMonth()];
+  const year = target.getFullYear();
+  const hours = target.getHours();
+  const minutes = String(target.getMinutes()).padStart(2, '0');
+  
+  return `${day} ${month} ${year} ${hours}:${minutes}`;
+}
+

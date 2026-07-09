@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { parseResetTime, formatCountdown, formatResetTime } from './utils/timeParser';
+import { parseResetTime, formatCountdown, formatResetTime, formatVerboseCountdown, formatVerboseResetTime } from './utils/timeParser';
 
 // --- DATA STRUCTURES ---
 export interface Account {
@@ -146,15 +146,15 @@ export default function App() {
   );
   const allExhausted = totalAccounts > 0 && exhaustedAccounts === totalAccounts;
 
-  // Find next available account when all are exhausted
-  let nextAvailableAccount: { account: Account; tool: AITool } | null = null;
+  // Find latest reset time when all are exhausted
+  let latestResetTime = 0;
   if (allExhausted) {
-    let minReset = Infinity;
     tools.forEach(tool => {
       tool.accounts.forEach(acc => {
-        if (acc.status === 'exhausted' && acc.resetTime && acc.resetTime < minReset) {
-          minReset = acc.resetTime;
-          nextAvailableAccount = { account: acc, tool };
+        if (acc.status === 'exhausted' && acc.resetTime) {
+          if (acc.resetTime > latestResetTime) {
+            latestResetTime = acc.resetTime;
+          }
         }
       });
     });
@@ -341,25 +341,19 @@ export default function App() {
 
       {/* GLOBAL STATUS BANNER */}
       {totalAccounts > 0 && (
-        <div className={`global-status-banner ${allExhausted ? 'all-exhausted' : 'has-active'}`}>
-          <div className="status-info">
-            <span className={`status-indicator-dot ${allExhausted ? 'exhausted' : 'active'}`}></span>
-            <div>
-              <div className="status-title">
-                {allExhausted ? 'All accounts are out of quota!' : 'Active Quotas Available'}
-              </div>
-              <div className="status-desc">
-                {allExhausted
-                  ? 'Switching options are temporarily locked. Countdown to next availability is active.'
-                  : `Currently, you have ${totalAccounts - exhaustedAccounts} of ${totalAccounts} accounts ready for work.`}
-              </div>
+        <div className={`global-status-banner ${allExhausted ? 'all-exhausted' : 'has-active'}`} style={{ padding: '0.75rem 1.25rem', marginBottom: '1.5rem' }}>
+          <div className="status-info" style={{ width: '100%', justifyContent: 'space-between', display: 'flex', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span className={`status-indicator-dot ${allExhausted ? 'exhausted' : 'active'}`}></span>
+              <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>
+                {allExhausted ? (
+                  `ready for work at latest ${formatVerboseCountdown(latestResetTime, currentTime)} (${formatVerboseResetTime(latestResetTime)})`
+                ) : (
+                  `Currently, you have ${totalAccounts - exhaustedAccounts} of ${totalAccounts} accounts ready for work.`
+                )}
+              </span>
             </div>
           </div>
-          {allExhausted && nextAvailableAccount && (
-            <div className="next-available-countdown">
-              Next Quota: {formatCountdown((nextAvailableAccount as any).account.resetTime, currentTime)} ({ (nextAvailableAccount as any).tool.name } - { (nextAvailableAccount as any).account.name })
-            </div>
-          )}
         </div>
       )}
 
