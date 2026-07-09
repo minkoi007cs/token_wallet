@@ -42,9 +42,10 @@ An ultra-minimalist developer tool account quota and recovery countdown wallet d
 ### Visual Progress Bar (Reset Time Bar)
 - Aligned on the absolute right side of each account card is a thin (`4px` height), wide (`270px` width) visual progress bar.
 - It is divided into exactly **8 distinct, equal-width slots** separated by `1.5px` vertical gaps:
-  - **3 Day Slots (Orange)**: Positioned on the left side of the bar. Fills grow right-to-left within each slot with a warm orange (`#f97316`) color.
-  - **5 Hour Slots (Yellow)**: Positioned on the right side of the bar. Fills grow right-to-left within each slot with a bright yellow (`#facc15`) color.
-- All active slots are packed/filled from the right edge, leaving empty slots as dark subtle track placeholders (`rgba(255,255,255,0.05)`) on the left side, allowing the user to easily read and count remaining recovery days and hours.
+  - Fills are stacked dynamically starting from the right side (slot 0) to the left side (slot 7) of the entire progress bar, ensuring the active colored blocks always touch with no empty slots in between.
+  - **Hours Fills (Yellow)**: Filled first starting from the far right (`right: 0`), up to 5 slots, using a bright yellow (`#facc15`) color.
+  - **Days Fills (Orange)**: Filled next immediately starting from the left of the last Hour fill, up to 3 slots, using a warm orange (`#f97316`) color.
+  - **Empty Placeholders**: Remaining slots on the left are rendered as dark subtle track placeholders (`rgba(255,255,255,0.05)`).
 
 ### Global Status Banner
 - Replaced header lists with a single sentence:

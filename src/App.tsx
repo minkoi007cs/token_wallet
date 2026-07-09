@@ -94,36 +94,42 @@ function getToolIcon(toolId: string, activeCount: number) {
   }
 }
 
-function getBarSlotFills(targetTime: number, now: number = Date.now()) {
+function getSegmentedBarSlots(targetTime: number, now: number = Date.now()) {
+  const slots = Array(8).fill(null).map(() => ({ fill: 0, type: 'empty' }));
+  
   const diff = targetTime - now;
   if (diff <= 0) {
-    return {
-      dayFills: [0, 0, 0],
-      hourFills: [0, 0, 0, 0, 0]
-    };
+    return slots;
   }
 
   const totalHours = diff / (1000 * 60 * 60);
   const days = Math.floor(totalHours / 24);
   const hoursDecimal = totalHours % 24;
 
-  // Day fills (index 0 is Day 1, index 1 is Day 2, index 2 is Day 3)
-  const dayFills = [
-    Math.max(0, Math.min(1, days - 0)),
-    Math.max(0, Math.min(1, days - 1)),
-    Math.max(0, Math.min(1, days - 2))
-  ];
+  const activeDays = Math.min(days, 3);
+  const activeHours = Math.min(hoursDecimal, 5);
 
-  // Hour fills (index 0 is Hour 1, index 1 is Hour 2, etc.)
-  const hourFills = [
-    Math.max(0, Math.min(1, hoursDecimal - 0)),
-    Math.max(0, Math.min(1, hoursDecimal - 1)),
-    Math.max(0, Math.min(1, hoursDecimal - 2)),
-    Math.max(0, Math.min(1, hoursDecimal - 3)),
-    Math.max(0, Math.min(1, hoursDecimal - 4))
-  ];
+  let slotIdx = 0;
 
-  return { dayFills, hourFills };
+  // 1. Fill Hour slots first (from right to left)
+  let remainingHours = activeHours;
+  while (remainingHours > 0 && slotIdx < 8) {
+    const fillVal = Math.min(remainingHours, 1);
+    slots[slotIdx] = { fill: fillVal, type: 'hours' };
+    remainingHours -= fillVal;
+    slotIdx++;
+  }
+
+  // 2. Fill Day slots next (from right to left)
+  let remainingDays = activeDays;
+  while (remainingDays > 0 && slotIdx < 8) {
+    const fillVal = Math.min(remainingDays, 1);
+    slots[slotIdx] = { fill: fillVal, type: 'days' };
+    remainingDays -= fillVal;
+    slotIdx++;
+  }
+
+  return slots;
 }
 
 export default function App() {
@@ -565,22 +571,17 @@ export default function App() {
                       </div>
 
                       {acc.resetTime && (() => {
-                        const { dayFills, hourFills } = getBarSlotFills(acc.resetTime, currentTime);
+                        const slots = getSegmentedBarSlots(acc.resetTime, currentTime);
                         return (
                           <div className="reset-bar-container" title={`Remaining: ${Math.floor((acc.resetTime - currentTime) / (1000 * 60 * 60))}h`}>
-                            {/* Day slots (from Day 3 to Day 1, left-to-right) */}
-                            {dayFills.slice().reverse().map((fill, idx) => (
-                              <div className="reset-bar-slot" key={`day-${idx}`}>
-                                {fill > 0 && (
-                                  <div className="reset-bar-slot-fill days-fill" style={{ width: `${fill * 100}%` }}></div>
-                                )}
-                              </div>
-                            ))}
-                            {/* Hour slots (from Hour 5 to Hour 1, left-to-right) */}
-                            {hourFills.slice().reverse().map((fill, idx) => (
-                              <div className="reset-bar-slot" key={`hour-${idx}`}>
-                                {fill > 0 && (
-                                  <div className="reset-bar-slot-fill hours-fill" style={{ width: `${fill * 100}%` }}></div>
+                            {/* Render slots from left to right (reversing so index 0 is on the far right) */}
+                            {slots.slice().reverse().map((slot, idx) => (
+                              <div className="reset-bar-slot" key={idx}>
+                                {slot.fill > 0 && (
+                                  <div
+                                    className={`reset-bar-slot-fill ${slot.type === 'days' ? 'days-fill' : 'hours-fill'}`}
+                                    style={{ width: `${slot.fill * 100}%` }}
+                                  ></div>
                                 )}
                               </div>
                             ))}
