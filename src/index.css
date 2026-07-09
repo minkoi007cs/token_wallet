@@ -854,3 +854,17 @@ header h1 svg {
 .backlog-item:hover {
   background-color: var(--color-border) !important;
 }
+
+/* Action Dropdown Menu */
+.dropdown-item {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}

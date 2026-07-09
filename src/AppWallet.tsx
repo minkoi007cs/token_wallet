@@ -27,6 +27,7 @@ export interface AppProject {
   status: 'Development' | 'Production' | 'Maintenance' | 'Deprecated' | string;
   priority: 'High' | 'Medium' | 'Low' | string;
   lastUpdated: number;
+  isDisabled?: boolean;
 }
 
 const APP_WALLET_STORAGE_KEY = 'app_wallet_data';
@@ -198,6 +199,8 @@ export default function AppWallet() {
     | { type: 'edit-app'; app: AppProject | null } // if null, it's "Add App"
   >(null);
 
+  const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
+
   // Form states
   const [formData, setFormData] = useState<Partial<AppProject>>({});
   const [backlogItems, setBacklogItems] = useState<BacklogItem[]>([]);
@@ -251,6 +254,16 @@ export default function AppWallet() {
       setApps(prev => [...prev, appToSave]);
     }
     setActiveModal(null);
+  };
+
+  const handleToggleDisable = (id: string) => {
+    setApps(prev => prev.map(a => a.id === id ? { ...a, isDisabled: !a.isDisabled } : a));
+    setOpenActionMenuId(null);
+  };
+
+  const handleRestartData = () => {
+    window.open('https://supabase.com/dashboard/projects', '_blank');
+    setOpenActionMenuId(null);
   };
 
   const handleDeleteApp = (id: string) => {
@@ -318,10 +331,57 @@ export default function AppWallet() {
 
       <div className="tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
         {apps.map(app => (
-          <div key={app.id} className="tool-card" onClick={() => handleOpenModal(app)} style={{ cursor: 'pointer' }}>
-            <div className="tool-header">
-              <h2>{app.name}</h2>
-              <span className={`status-badge ${app.status.toLowerCase()}`}>{app.status}</span>
+          <div key={app.id} className={`tool-card ${app.isDisabled ? 'disabled' : ''}`} style={{ position: 'relative', opacity: app.isDisabled ? 0.6 : 1, transition: 'all 0.2s' }}>
+            <div className="tool-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ flex: 1 }}>
+                <h2 
+                  onClick={() => app.url ? window.open(app.url, '_blank') : null} 
+                  style={{ cursor: app.url ? 'pointer' : 'default', textDecoration: app.url ? 'underline' : 'none' }}
+                  title={app.url ? `Open ${app.url}` : ''}
+                >
+                  {app.name}
+                </h2>
+                <div style={{ marginTop: '0.25rem' }}>
+                  <span className={`status-badge ${app.status.toLowerCase()}`}>{app.status}</span>
+                  {app.isDisabled && <span className="status-badge" style={{ marginLeft: '0.5rem', backgroundColor: 'var(--color-border)', color: 'var(--text-muted)' }}>DISABLED</span>}
+                </div>
+              </div>
+              
+              {/* Action Menu */}
+              <div style={{ position: 'relative' }} onMouseLeave={() => setOpenActionMenuId(null)}>
+                <button 
+                  className="btn btn-sm" 
+                  style={{ background: 'transparent', border: 'none', padding: '0.2rem 0.5rem', fontSize: '1.2rem', color: 'var(--text-muted)', cursor: 'pointer' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenActionMenuId(openActionMenuId === app.id ? null : app.id);
+                  }}
+                >
+                  ⋮
+                </button>
+                {openActionMenuId === app.id && (
+                  <div className="action-dropdown" style={{
+                    position: 'absolute', top: '100%', right: '0', backgroundColor: 'var(--bg-elevated)', 
+                    border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', 
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)', minWidth: '160px', zIndex: 10, padding: '0.5rem 0'
+                  }}>
+                    <div className="dropdown-item" onClick={() => { handleOpenModal(app); setOpenActionMenuId(null); }}>
+                      Edit App
+                    </div>
+                    <div className="dropdown-item" onClick={() => { handleOpenModal(app); setOpenActionMenuId(null); }}>
+                      Add Backlog Story
+                    </div>
+                    {app.database?.toLowerCase().includes('supabase') && (
+                      <div className="dropdown-item" onClick={handleRestartData}>
+                        Restart Data (Supabase)
+                      </div>
+                    )}
+                    <div className="dropdown-item" style={{ borderTop: '1px solid var(--color-border)', marginTop: '0.25rem', paddingTop: '0.25rem', color: app.isDisabled ? '#10b981' : '#ef4444' }} onClick={() => handleToggleDisable(app.id)}>
+                      {app.isDisabled ? 'Enable App' : 'Disable App'}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="accounts-list" style={{ marginTop: '1rem' }}>
               <div style={{ marginBottom: '0.5rem' }}>
