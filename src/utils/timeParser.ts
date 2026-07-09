@@ -200,3 +200,18 @@ export function formatVerboseResetTime(targetTime: number): string {
   return `${day} ${month} ${year} ${hours}:${minutes}`;
 }
 
+/**
+ * Returns a compact duration string like "4h 52m" or "25m" for remaining time
+ */
+export function getRemainingDurationString(targetTime: number, now: number = Date.now()): string {
+  const diff = targetTime - now;
+  if (diff <= 0) return '5h';
+  const minutes = Math.ceil(diff / (1000 * 60));
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours > 0) {
+    return `${hours}h${mins > 0 ? ` ${mins}m` : ''}`;
+  }
+  return `${mins}m`;
+}
+

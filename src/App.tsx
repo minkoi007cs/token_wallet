@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { parseResetTime, formatCountdown, formatResetTime, formatVerboseCountdown, formatVerboseResetTime } from './utils/timeParser';
+import { parseResetTime, formatResetTime, formatVerboseCountdown, formatVerboseResetTime, getRemainingDurationString } from './utils/timeParser';
 
 // --- DATA STRUCTURES ---
 export interface Account {
@@ -479,6 +479,11 @@ export default function App() {
                     className={`account-card ${isActive ? 'active' : 'exhausted'}`}
                     onClick={() => {
                       setAccountRenameText(acc.name);
+                      if (acc.status === 'exhausted' && acc.resetTime) {
+                        setCustomResetInput(getRemainingDurationString(acc.resetTime));
+                      } else {
+                        setCustomResetInput('5h');
+                      }
                       setActiveModal({ type: 'manage-account', toolId: tool.id, accountId: acc.id });
                     }}
                   >
@@ -637,17 +642,6 @@ export default function App() {
                   autoFocus
                 />
                 
-                {/* Countdown / Preview display */}
-                {selectedAccount.status === 'exhausted' && (
-                  <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', background: 'rgba(0,0,0,0.15)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-                    <div style={{ fontSize: '1.1rem', fontFamily: 'monospace', fontWeight: '700', color: '#f59e0b' }}>
-                      Countdown: {selectedAccount.resetTime ? formatCountdown(selectedAccount.resetTime, currentTime) : '--m --s'}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
-                      Resets {selectedAccount.resetTime ? formatResetTime(selectedAccount.resetTime) : ''}
-                    </div>
-                  </div>
-                )}
                 {customResetInput && parsedPreview && (
                   <div style={{ fontSize: '0.75rem', color: 'var(--color-active)', marginTop: '0.35rem' }}>
                     ✓ Understood: Resets {formatResetTime(parsedPreview)}
@@ -658,13 +652,13 @@ export default function App() {
               {/* 2. 2 TOGGLE STATUS BUTTONS: Remain (xanh) & Run out (đỏ cam) */}
               <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '1.25rem' }}>
                 <button
-                  className={`btn ${selectedAccount.status === 'active' ? 'btn-primary' : ''}`}
+                  className="btn btn-primary"
                   style={{
                     flex: 1,
                     justifyContent: 'center',
-                    borderColor: selectedAccount.status === 'active' ? 'var(--color-active)' : 'var(--color-border)',
-                    backgroundColor: selectedAccount.status === 'active' ? 'var(--color-active)' : 'transparent',
-                    color: selectedAccount.status === 'active' ? '#ffffff' : 'var(--text-main)',
+                    borderColor: 'var(--color-active)',
+                    backgroundColor: 'var(--color-active)',
+                    color: '#ffffff',
                     padding: '0.6rem'
                   }}
                   onClick={() => handleRestoreAccount(activeModal.toolId, selectedAccount!.id, parsedPreview || undefined)}
@@ -672,7 +666,7 @@ export default function App() {
                   Remain
                 </button>
                 <button
-                  className={`btn ${selectedAccount.status === 'exhausted' && !customResetInput ? 'btn-danger' : (parsedPreview ? 'btn-danger' : '')}`}
+                  className="btn btn-danger"
                   style={{
                     flex: 1,
                     justifyContent: 'center',
