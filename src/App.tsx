@@ -154,6 +154,7 @@ export default function App() {
   // Mark exhausted custom parser states
   const [customResetInput, setCustomResetInput] = useState('');
   const [parsedPreview, setParsedPreview] = useState<number | null>(null);
+  const [inputError, setInputError] = useState<string | null>(null);
 
   // New item text states
   const [newToolName, setNewToolName] = useState('');
@@ -211,10 +212,18 @@ export default function App() {
   useEffect(() => {
     if (activeModal?.type === 'manage-account') {
       const parsed = parseResetTime(customResetInput);
-      setParsedPreview(parsed);
+      if (parsed !== null && parsed <= Date.now()) {
+        // Parsed successfully but date is in the past
+        setParsedPreview(null);
+        setInputError('This date is already in the past. Please enter a future time.');
+      } else {
+        setParsedPreview(parsed);
+        setInputError(null);
+      }
     } else {
       setCustomResetInput('');
       setParsedPreview(null);
+      setInputError(null);
     }
   }, [customResetInput, activeModal]);
 
@@ -712,15 +721,21 @@ export default function App() {
                 <input
                   id="custom-reset-input"
                   className="input-text"
-                  placeholder="e.g. 5h, 3h 20m, at 16:30, Monday 9am"
+                  placeholder="e.g. 5h, 2 days, Jul 12 2:36PM, Jun 12 2026"
                   value={customResetInput}
                   onChange={e => setCustomResetInput(e.target.value)}
                   autoFocus
+                  style={inputError ? { borderColor: 'var(--color-exhausted)' } : {}}
                 />
-                
-                {customResetInput && parsedPreview && (
+
+                {customResetInput && parsedPreview && !inputError && (
                   <div style={{ fontSize: '0.75rem', color: 'var(--color-active)', marginTop: '0.35rem' }}>
                     ✓ Understood: Resets {formatResetTime(parsedPreview)}
+                  </div>
+                )}
+                {inputError && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-exhausted)', marginTop: '0.35rem' }}>
+                    ✗ {inputError}
                   </div>
                 )}
               </div>
