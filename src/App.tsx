@@ -391,6 +391,20 @@ export default function App() {
                   <polyline points="2 12 12 17 22 12"></polyline>
                 </svg>
                 {tool.name}
+                <button
+                  className="btn-icon-sm"
+                  style={{ marginLeft: '0.4rem', color: 'var(--color-accent)', padding: '0.15rem' }}
+                  title="Add Account"
+                  onClick={() => {
+                    setNewAccountName('');
+                    setActiveModal({ type: 'add-account', toolId: tool.id });
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </button>
               </h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <span className="tool-meta">
@@ -449,20 +463,7 @@ export default function App() {
                 );
               })}
 
-              {/* DASHBOARD + ADD ACCOUNT CARD */}
-              <div
-                className="account-card add-card"
-                onClick={() => {
-                  setNewAccountName('');
-                  setActiveModal({ type: 'add-account', toolId: tool.id });
-                }}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                <span>Add Account</span>
-              </div>
+
             </div>
           </div>
         );
