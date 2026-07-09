@@ -747,15 +747,5 @@ header h1 svg {
   background-color: #facc15; /* Brighter yellow for hours */
 }
 
-.reset-bar-divider {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 1px;
-  height: 8px; /* Vertical divider | at the 50% mark */
-  background-color: rgba(255, 255, 255, 0.25);
-  z-index: 2;
-  flex-shrink: 0;
-}
 
 

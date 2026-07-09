@@ -104,8 +104,14 @@ function calculateBarPercentages(targetTime: number, now: number = Date.now()) {
   const days = Math.floor(totalHours / 24);
   const hoursDecimal = totalHours % 24;
 
-  const daysPercent = Math.min((days / 3) * 100, 100);
-  const hoursPercent = Math.min((hoursDecimal / 5) * 100, 100);
+  // 1 day = 1 unit (max 3 days)
+  // 1 hour = 1 unit (max 5 hours)
+  // Total units = 3 + 5 = 8. Each unit is 12.5% of the total bar width.
+  const dayUnits = Math.min(days, 3);
+  const hourUnits = Math.min(hoursDecimal, 5);
+
+  const daysPercent = dayUnits * 12.5;
+  const hoursPercent = hourUnits * 12.5;
 
   return { daysPercent, hoursPercent };
 }
@@ -552,7 +558,6 @@ export default function App() {
                         const { daysPercent, hoursPercent } = calculateBarPercentages(acc.resetTime, currentTime);
                         return (
                           <div className="reset-bar-container" title={`Remaining: ${Math.floor((acc.resetTime - currentTime) / (1000 * 60 * 60))}h`}>
-                            <div className="reset-bar-divider"></div>
                             <div className="reset-bar-fill days-fill" style={{ right: `${hoursPercent}%`, width: `${daysPercent}%` }}></div>
                             <div className="reset-bar-fill hours-fill" style={{ right: 0, width: `${hoursPercent}%` }}></div>
                           </div>
