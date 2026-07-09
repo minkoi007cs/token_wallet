@@ -102,7 +102,6 @@ export default function App() {
             return {
               ...acc,
               status: 'active' as const,
-              resetTime: undefined,
               exhaustedType: undefined
             };
           }
@@ -182,7 +181,7 @@ export default function App() {
     setActiveModal(null);
   };
 
-  const handleRestoreAccount = (toolId: string, accountId: string) => {
+  const handleRestoreAccount = (toolId: string, accountId: string, resetTime?: number) => {
     setTools(prev =>
       prev.map(t => {
         if (t.id !== toolId) return t;
@@ -193,7 +192,7 @@ export default function App() {
             return {
               ...a,
               status: 'active',
-              resetTime: undefined,
+              resetTime: resetTime !== undefined ? resetTime : a.resetTime,
               exhaustedType: undefined
             };
           })
@@ -447,7 +446,7 @@ export default function App() {
                     <div className="account-info-side">
                       <span className={`status-indicator-dot ${isActive ? 'active' : 'exhausted'}`}></span>
                       <span className="account-name">{acc.name}</span>
-                      {!isActive && acc.resetTime && (
+                      {acc.resetTime && (
                         <span className="reset-time-inline">
                           - Resets {formatResetTime(acc.resetTime)}
                         </span>
@@ -629,7 +628,7 @@ export default function App() {
                     color: selectedAccount.status === 'active' ? '#ffffff' : 'var(--text-main)',
                     padding: '0.6rem'
                   }}
-                  onClick={() => handleRestoreAccount(activeModal.toolId, selectedAccount!.id)}
+                  onClick={() => handleRestoreAccount(activeModal.toolId, selectedAccount!.id, parsedPreview || undefined)}
                 >
                   Remain
                 </button>
