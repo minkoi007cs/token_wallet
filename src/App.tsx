@@ -71,7 +71,6 @@ export default function App() {
   // Mark exhausted custom parser states
   const [customResetInput, setCustomResetInput] = useState('');
   const [parsedPreview, setParsedPreview] = useState<number | null>(null);
-  const [showTimerAdjust, setShowTimerAdjust] = useState(false);
 
   // New item text states
   const [newToolName, setNewToolName] = useState('');
@@ -181,7 +180,6 @@ export default function App() {
       })
     );
     setActiveModal(null);
-    setShowTimerAdjust(false);
   };
 
   const handleRestoreAccount = (toolId: string, accountId: string) => {
@@ -203,7 +201,6 @@ export default function App() {
       })
     );
     setActiveModal(null);
-    setShowTimerAdjust(false);
   };
 
   const handleRenameAccount = (toolId: string, accountId: string) => {
@@ -436,7 +433,6 @@ export default function App() {
                     className={`account-card ${isActive ? 'active' : 'exhausted'}`}
                     onClick={() => {
                       setAccountRenameText(acc.name);
-                      setShowTimerAdjust(false);
                       setActiveModal({ type: 'manage-account', toolId: tool.id, accountId: acc.id });
                     }}
                   >
@@ -644,153 +640,82 @@ export default function App() {
 
               {/* QUOTA CONTROLS */}
               <div style={{ padding: '1rem', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
-                <h4 style={{ fontSize: '0.9rem', color: '#ffffff', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quota Status</h4>
-                {selectedAccount.status === 'active' ? (
-                  <div>
-                    <p style={{ color: 'var(--color-active)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                      <span className="status-indicator-dot active"></span>
-                      Quota is Active & Available
-                    </p>
-                    <div className="presets-grid">
-                      <button
-                        className="btn-preset"
-                        onClick={() => {
-                          const fiveHours = Date.now() + 5 * 60 * 60 * 1000;
-                          handleMarkExhausted(activeModal.toolId, selectedAccount!.id, fiveHours, '5h');
-                        }}
-                      >
-                        <span className="preset-title">5h Limit Reset</span>
-                        <span className="preset-desc">Exhausted (5h timer)</span>
-                      </button>
-                      <button
-                        className="btn-preset"
-                        onClick={() => {
-                          const weekly = Date.now() + 7 * 24 * 60 * 60 * 1000;
-                          handleMarkExhausted(activeModal.toolId, selectedAccount!.id, weekly, 'weekly');
-                        }}
-                      >
-                        <span className="preset-title">Weekly Reset</span>
-                        <span className="preset-desc">Exhausted (7d timer)</span>
-                      </button>
-                    </div>
+                <h4 style={{ fontSize: '0.9rem', color: '#ffffff', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quota Status</h4>
+                
+                {/* 2 TOGGLE STATUS BUTTONS: Remain & Run out */}
+                <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                  <button
+                    className={`btn ${selectedAccount.status === 'active' ? 'btn-primary' : ''}`}
+                    style={{
+                      flex: 1,
+                      justifyContent: 'center',
+                      borderColor: selectedAccount.status === 'active' ? 'var(--color-active)' : 'var(--color-border)',
+                      backgroundColor: selectedAccount.status === 'active' ? 'var(--color-active)' : 'transparent',
+                      color: selectedAccount.status === 'active' ? '#ffffff' : 'var(--text-main)'
+                    }}
+                    onClick={() => handleRestoreAccount(activeModal.toolId, selectedAccount!.id)}
+                  >
+                    Remain (Available)
+                  </button>
+                  <button
+                    className={`btn ${selectedAccount.status === 'exhausted' ? 'btn-primary' : ''}`}
+                    style={{
+                      flex: 1,
+                      justifyContent: 'center',
+                      borderColor: selectedAccount.status === 'exhausted' ? 'var(--color-exhausted)' : 'var(--color-border)',
+                      backgroundColor: selectedAccount.status === 'exhausted' ? 'var(--color-exhausted)' : 'transparent',
+                      color: selectedAccount.status === 'exhausted' ? '#ffffff' : 'var(--text-main)'
+                    }}
+                    onClick={() => {
+                      // Visual button state. Clicking it focuses user on the reset time inputs below
+                    }}
+                  >
+                    Run out (Exhausted)
+                  </button>
+                </div>
 
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label>Or custom duration / time</label>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <input
-                          className="input-text"
-                          style={{ padding: '0.5rem 0.75rem', fontSize: '0.9rem' }}
-                          placeholder="e.g. 3h 20m, at 16:30, Monday 9am"
-                          value={customResetInput}
-                          onChange={e => setCustomResetInput(e.target.value)}
-                        />
-                        <button
-                          className="btn btn-primary"
-                          style={{ padding: '0.5rem 1rem' }}
-                          disabled={!parsedPreview}
-                          onClick={() => {
-                            if (parsedPreview) {
-                              handleMarkExhausted(activeModal.toolId, selectedAccount!.id, parsedPreview, 'custom');
-                            }
-                          }}
-                        >
-                          Mark
-                        </button>
-                      </div>
-                      {customResetInput && parsedPreview && (
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-active)', marginTop: '0.35rem' }}>
-                          Understood: Resets {formatResetTime(parsedPreview)}
-                        </div>
-                      )}
+                {/* SHOW LIVE COUNTDOWN IF EXHAUSTED */}
+                {selectedAccount.status === 'exhausted' && (
+                  <div style={{ marginBottom: '1.25rem', padding: '0.75rem', background: 'rgba(0,0,0,0.15)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
+                    <div style={{ fontSize: '1.2rem', fontFamily: 'monospace', fontWeight: '700', color: '#f59e0b' }}>
+                      Countdown: {selectedAccount.resetTime ? formatCountdown(selectedAccount.resetTime, currentTime) : '--m --s'}
                     </div>
-                  </div>
-                ) : (
-                  <div>
-                    <p style={{ color: '#f59e0b', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                      <span className="status-indicator-dot exhausted"></span>
-                      Quota Exhausted
-                    </p>
-                    <div style={{ marginBottom: '1rem' }}>
-                      <div style={{ fontSize: '1.25rem', fontFamily: 'monospace', fontWeight: '700', color: '#f59e0b' }}>
-                        Countdown: {selectedAccount.resetTime ? formatCountdown(selectedAccount.resetTime, currentTime) : '--m --s'}
-                      </div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                        Resetting: {selectedAccount.resetTime ? formatResetTime(selectedAccount.resetTime) : ''}
-                      </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                      Resets {selectedAccount.resetTime ? formatResetTime(selectedAccount.resetTime) : ''}
                     </div>
-
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button
-                        className="btn btn-primary"
-                        style={{ flex: 1, padding: '0.5rem' }}
-                        onClick={() => handleRestoreAccount(activeModal.toolId, selectedAccount!.id)}
-                      >
-                        Reset Quota Now (Mark Ready)
-                      </button>
-                      <button
-                        className="btn"
-                        style={{ flex: 1, padding: '0.5rem' }}
-                        onClick={() => setShowTimerAdjust(!showTimerAdjust)}
-                      >
-                        {showTimerAdjust ? 'Hide Adjust' : 'Adjust Reset Time'}
-                      </button>
-                    </div>
-
-                    {showTimerAdjust && (
-                      <div style={{ marginTop: '1rem', borderTop: '1px solid var(--color-border)', paddingTop: '1rem' }}>
-                        <div className="presets-grid">
-                          <button
-                            className="btn-preset"
-                            onClick={() => {
-                              const fiveHours = Date.now() + 5 * 60 * 60 * 1000;
-                              handleMarkExhausted(activeModal.toolId, selectedAccount!.id, fiveHours, '5h');
-                            }}
-                          >
-                            <span className="preset-title">5h Limit</span>
-                          </button>
-                          <button
-                            className="btn-preset"
-                            onClick={() => {
-                              const weekly = Date.now() + 7 * 24 * 60 * 60 * 1000;
-                              handleMarkExhausted(activeModal.toolId, selectedAccount!.id, weekly, 'weekly');
-                            }}
-                          >
-                            <span className="preset-title">Weekly (7d)</span>
-                          </button>
-                        </div>
-                        <div className="form-group" style={{ marginBottom: 0 }}>
-                          <label>Custom adjust duration</label>
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <input
-                              className="input-text"
-                              style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
-                              placeholder="e.g. 2h, tomorrow 9am"
-                              value={customResetInput}
-                              onChange={e => setCustomResetInput(e.target.value)}
-                            />
-                            <button
-                              className="btn btn-primary"
-                              style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
-                              disabled={!parsedPreview}
-                              onClick={() => {
-                                if (parsedPreview) {
-                                  handleMarkExhausted(activeModal.toolId, selectedAccount!.id, parsedPreview, 'custom');
-                                }
-                              }}
-                            >
-                              Update
-                            </button>
-                          </div>
-                          {customResetInput && parsedPreview && (
-                            <div style={{ fontSize: '0.75rem', color: 'var(--color-active)', marginTop: '0.35rem' }}>
-                              Understood: Resets {formatResetTime(parsedPreview)}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
+
+                {/* SINGLE RESET TIME INPUT (reset in / at) */}
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>{selectedAccount.status === 'active' ? 'Set Reset Time to Run Out' : 'Adjust Reset Time'}</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      className="input-text"
+                      style={{ padding: '0.5rem 0.75rem', fontSize: '0.9rem' }}
+                      placeholder="e.g. 5h, 3h 20m, at 16:30, Monday 9am"
+                      value={customResetInput}
+                      onChange={e => setCustomResetInput(e.target.value)}
+                    />
+                    <button
+                      className="btn btn-primary"
+                      style={{ padding: '0.5rem 1rem' }}
+                      disabled={!parsedPreview}
+                      onClick={() => {
+                        if (parsedPreview) {
+                          handleMarkExhausted(activeModal.toolId, selectedAccount!.id, parsedPreview, 'custom');
+                        }
+                      }}
+                    >
+                      Confirm
+                    </button>
+                  </div>
+                  {customResetInput && parsedPreview && (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-active)', marginTop: '0.35rem' }}>
+                      Understood: Resets {formatResetTime(parsedPreview)}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
