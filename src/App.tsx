@@ -552,13 +552,9 @@ export default function App() {
                         const { daysPercent, hoursPercent } = calculateBarPercentages(acc.resetTime, currentTime);
                         return (
                           <div className="reset-bar-container" title={`Remaining: ${Math.floor((acc.resetTime - currentTime) / (1000 * 60 * 60))}h`}>
-                            <div className="reset-bar-segment days-segment">
-                              <div className="reset-bar-fill" style={{ width: `${daysPercent}%` }}></div>
-                            </div>
                             <div className="reset-bar-divider"></div>
-                            <div className="reset-bar-segment hours-segment">
-                              <div className="reset-bar-fill" style={{ width: `${hoursPercent}%` }}></div>
-                            </div>
+                            <div className="reset-bar-fill days-fill" style={{ right: `${hoursPercent}%`, width: `${daysPercent}%` }}></div>
+                            <div className="reset-bar-fill hours-fill" style={{ right: 0, width: `${hoursPercent}%` }}></div>
                           </div>
                         );
                       })()}

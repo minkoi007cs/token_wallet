@@ -723,7 +723,7 @@ header h1 svg {
 .reset-bar-container {
   display: flex;
   align-items: center;
-  width: 270px; /* Restored fixed width */
+  width: 270px; /* Fixed width */
   height: 4px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 2px;
@@ -732,43 +732,27 @@ header h1 svg {
   flex-shrink: 0;
 }
 
-.reset-bar-segment {
-  flex: 1;
-  height: 100%;
-  position: relative;
-  background: transparent;
-  overflow: hidden;
-}
-
-.reset-bar-segment.days-segment {
-  border-top-left-radius: 2px;
-  border-bottom-left-radius: 2px;
-}
-
-.reset-bar-segment.hours-segment {
-  border-top-right-radius: 2px;
-  border-bottom-right-radius: 2px;
-}
-
 .reset-bar-fill {
   height: 100%;
   position: absolute;
-  transition: width 0.3s ease;
+  transition: right 0.3s ease, width 0.3s ease;
+  border-radius: 2px;
 }
 
-.days-segment .reset-bar-fill {
-  background-color: #f97316; /* Keep orange for days */
-  right: 0; /* Align Day fill to the right (touching the center divider) */
+.reset-bar-fill.days-fill {
+  background-color: #f97316; /* Orange for days */
 }
 
-.hours-segment .reset-bar-fill {
+.reset-bar-fill.hours-fill {
   background-color: #facc15; /* Brighter yellow for hours */
-  left: 0;  /* Align Hour fill to the left (touching the center divider) */
 }
 
 .reset-bar-divider {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   width: 1px;
-  height: 8px; /* Slightly taller divider to look like a separator | */
+  height: 8px; /* Vertical divider | at the 50% mark */
   background-color: rgba(255, 255, 255, 0.25);
   z-index: 2;
   flex-shrink: 0;

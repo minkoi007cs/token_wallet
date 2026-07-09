@@ -40,13 +40,11 @@ An ultra-minimalist developer tool account quota and recovery countdown wallet d
 - **Inline Resets Time**: For all accounts, the absolute reset time is displayed inline next to the name in small, muted text: `- Resets Today at 3:01 PM` or `Resets Tomorrow at 1:00 AM`.
 
 ### Visual Progress Bar (Reset Time Bar)
-- Aligned on the absolute right side of each account card is a thin (`4px` height), wide (`270px` width) visual progress bar with two segments separated by a vertical divider `|`:
-  - **Left Segment (Days)**: Capped at `3 days` max. Colored **Orange** (`#f97316`).
-  - **Right Segment (Hours)**: Capped at `5 hours` max. Colored **Yellow** (`#facc15`).
-- Both segments feature **center-aligned colored fills** to ensure visual continuity:
-  - The Days segment fill is right-aligned (`right: 0`), growing leftwards.
-  - The Hours segment fill is left-aligned (`left: 0`), growing rightwards.
-  This ensures that both color blocks meet directly at the center divider `|`.
+- Aligned on the absolute right side of each account card is a thin (`4px` height), wide (`270px` width) visual progress bar.
+- It displays two consecutive filled colored blocks that meet seamlessly at all times, with empty space left-aligned on the progress bar:
+  - **Hours Segment (Yellow)**: Capped at `5 hours` max, colored **Yellow** (`#facc15`), aligned to the far right (`right: 0`), growing leftwards.
+  - **Days Segment (Orange)**: Capped at `3 days` max, colored **Orange** (`#f97316`), positioned immediately to the left of the Hours segment (`right: ${hoursPercent}%`), growing leftwards.
+- A vertical divider line `|` remains statically positioned in the center (`50%`) of the progress bar for reference.
 
 ### Global Status Banner
 - Replaced header lists with a single sentence:
