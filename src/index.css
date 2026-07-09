@@ -723,13 +723,12 @@ header h1 svg {
 .reset-bar-container {
   display: flex;
   align-items: center;
-  width: 270px; /* 3x the original width of 90px */
+  flex: 1; /* Stretch to touch the time text and fill all remaining space */
   height: 4px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 2px;
   position: relative;
-  margin-left: 1rem;
-  flex-shrink: 0;
+  margin-left: 0.75rem; /* Space between time text and progress bar */
 }
 
 .reset-bar-segment {
