@@ -211,12 +211,24 @@ export default function App() {
   // Live preview parser inside manage-account modal
   useEffect(() => {
     if (activeModal?.type === 'manage-account') {
-      const parsed = parseResetTime(customResetInput);
-      if (parsed !== null && parsed <= Date.now()) {
-        // Parsed successfully but date is in the past
+      const trimmed = customResetInput.trim();
+      if (!trimmed) {
+        // Empty input — clear everything silently
+        setParsedPreview(null);
+        setInputError(null);
+        return;
+      }
+      const parsed = parseResetTime(trimmed);
+      if (parsed === null) {
+        // Could not parse at all
+        setParsedPreview(null);
+        setInputError('Cannot understand this format. Try: 5h, 2 days, Jul 12 2:36PM');
+      } else if (parsed <= Date.now()) {
+        // Parsed but in the past
         setParsedPreview(null);
         setInputError('This date is already in the past. Please enter a future time.');
       } else {
+        // Valid future time
         setParsedPreview(parsed);
         setInputError(null);
       }
