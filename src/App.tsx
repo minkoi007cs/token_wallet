@@ -752,6 +752,7 @@ export default function App() {
                     color: '#ffffff',
                     padding: '0.6rem'
                   }}
+                  disabled={!!inputError}
                   onClick={() => handleRestoreAccount(activeModal.toolId, selectedAccount!.id, parsedPreview || undefined)}
                 >
                   Remain
@@ -763,7 +764,7 @@ export default function App() {
                     justifyContent: 'center',
                     padding: '0.6rem'
                   }}
-                  disabled={!parsedPreview}
+                  disabled={!parsedPreview || !!inputError}
                   onClick={() => {
                     if (parsedPreview) {
                       handleMarkExhausted(activeModal.toolId, selectedAccount!.id, parsedPreview, 'custom');
