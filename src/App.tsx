@@ -634,13 +634,10 @@ export default function App() {
                   Remain
                 </button>
                 <button
-                  className="btn"
+                  className={`btn ${selectedAccount.status === 'exhausted' && !customResetInput ? 'btn-danger' : (parsedPreview ? 'btn-danger' : '')}`}
                   style={{
                     flex: 1,
                     justifyContent: 'center',
-                    borderColor: selectedAccount.status === 'exhausted' && !customResetInput ? '#ef4444' : (parsedPreview ? '#ef4444' : 'var(--color-border)'),
-                    backgroundColor: selectedAccount.status === 'exhausted' && !customResetInput ? '#ef4444' : (parsedPreview ? '#ef4444' : 'transparent'),
-                    color: '#ffffff',
                     padding: '0.6rem'
                   }}
                   disabled={!parsedPreview}
