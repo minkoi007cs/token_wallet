@@ -33,20 +33,139 @@ const APP_WALLET_STORAGE_KEY = 'app_wallet_data';
 
 const INITIAL_APP_DATA: AppProject[] = [
   {
-    id: 'app-initial-1',
+    id: 'app-github-tokenwallet',
     name: 'Token Wallet',
     developer: 'Hoa Hoang',
     github: 'https://github.com/johnnyhoang/TokenWallet',
-    url: '', // User can update this once deployed
+    url: 'https://token-wallet-chi.vercel.app',
     hosting: 'Vercel',
     database: 'LocalStorage',
     type: 'Web App',
     description: 'A web application to manage AI tool quotas, tokens, and monitor personal portfolio of applications.',
-    techStack: 'React, TypeScript, Vite, Vanilla CSS',
+    techStack: 'TypeScript, React, Vite',
     techNotes: 'Clean UI with glassmorphism touches and smooth transitions.',
     backlog: [],
     status: 'Production',
     priority: 'High',
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'app-github-ade',
+    name: 'AdmissionDecisionEngine',
+    developer: 'Hoa Hoang',
+    github: 'https://github.com/johnnyhoang/AdmissionDecisionEngine',
+    url: 'https://ade-backend.vercel.app',
+    hosting: 'Vercel',
+    database: '',
+    type: 'Web App',
+    description: 'Admission Decision Engine backend system.',
+    techStack: 'TypeScript',
+    techNotes: '',
+    backlog: [],
+    status: 'Development',
+    priority: 'Medium',
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'app-github-coffee',
+    name: 'coffee_shop_24hxh',
+    developer: 'Hoa Hoang',
+    github: 'https://github.com/johnnyhoang/coffee_shop_24hxh',
+    url: 'https://coffee24hxh-api.vercel.app',
+    hosting: 'Vercel',
+    database: '',
+    type: 'Web App',
+    description: 'Coffee shop management system / API.',
+    techStack: 'TypeScript',
+    techNotes: '',
+    backlog: [],
+    status: 'Development',
+    priority: 'Medium',
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'app-github-devbrain',
+    name: 'dev-brain',
+    developer: 'Hoa Hoang',
+    github: 'https://github.com/johnnyhoang/dev-brain',
+    url: '',
+    hosting: '',
+    database: '',
+    type: 'Other',
+    description: 'dev-brain',
+    techStack: '',
+    techNotes: '',
+    backlog: [],
+    status: 'Development',
+    priority: 'Medium',
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'app-github-family',
+    name: 'family-management',
+    developer: 'Hoa Hoang',
+    github: 'https://github.com/johnnyhoang/family-management',
+    url: 'https://family-management-eight.vercel.app',
+    hosting: 'Vercel',
+    database: '',
+    type: 'Web App',
+    description: 'family-management application.',
+    techStack: 'TypeScript',
+    techNotes: '',
+    backlog: [],
+    status: 'Development',
+    priority: 'Medium',
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'app-github-game',
+    name: 'gameEngG10',
+    developer: 'Hoa Hoang',
+    github: 'https://github.com/johnnyhoang/gameEngG10',
+    url: 'https://game-eng-g10-backend.vercel.app',
+    hosting: 'Vercel',
+    database: '',
+    type: 'Web App',
+    description: 'Game Engine G10 backend.',
+    techStack: 'TypeScript',
+    techNotes: '',
+    backlog: [],
+    status: 'Development',
+    priority: 'Medium',
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'app-github-photo',
+    name: 'photo-clear-1',
+    developer: 'Hoa Hoang',
+    github: 'https://github.com/johnnyhoang/photo-clear-1',
+    url: '',
+    hosting: '',
+    database: '',
+    type: 'Other',
+    description: 'Photo clearing or enhancement tool.',
+    techStack: 'Python',
+    techNotes: '',
+    backlog: [],
+    status: 'Development',
+    priority: 'Medium',
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'app-github-qlhs',
+    name: 'qlhs_dtnt',
+    developer: 'Hoa Hoang',
+    github: 'https://github.com/johnnyhoang/qlhs_dtnt',
+    url: 'https://qlhs-dtnt.vercel.app',
+    hosting: 'Vercel',
+    database: '',
+    type: 'Web App',
+    description: 'Website quan ly hoc sinh dan toc noi tru.',
+    techStack: 'TypeScript',
+    techNotes: '',
+    backlog: [],
+    status: 'Development',
+    priority: 'Medium',
     lastUpdated: Date.now()
   }
 ];
@@ -57,7 +176,16 @@ export default function AppWallet() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.length > 0) return parsed;
+        if (parsed.length > 0) {
+          // Merge any missing initial apps by name to auto-populate existing users
+          const missingApps = INITIAL_APP_DATA.filter(initApp => 
+            !parsed.some((p: AppProject) => p.name === initApp.name)
+          );
+          if (missingApps.length > 0) {
+            return [...parsed, ...missingApps];
+          }
+          return parsed;
+        }
       } catch (e) {
         console.error('Failed to parse app wallet local storage', e);
       }
