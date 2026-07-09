@@ -448,7 +448,7 @@ export default function App() {
                       <span className={`status-indicator-dot ${isActive ? 'active' : 'exhausted'}`}></span>
                       <span className="account-name">{acc.name}</span>
                       {!isActive && (
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
+                        <span className="reset-time-inline">
                           - reset in. {acc.resetTime ? formatCountdown(acc.resetTime, currentTime) : '--m --s'}
                         </span>
                       )}
