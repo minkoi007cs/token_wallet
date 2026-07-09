@@ -94,6 +94,22 @@ function getToolIcon(toolId: string, activeCount: number) {
   }
 }
 
+function calculateBarPercentages(targetTime: number, now: number = Date.now()) {
+  const diff = targetTime - now;
+  if (diff <= 0) {
+    return { daysPercent: 0, hoursPercent: 0 };
+  }
+
+  const totalHours = diff / (1000 * 60 * 60);
+  const days = Math.floor(totalHours / 24);
+  const hoursDecimal = totalHours % 24;
+
+  const daysPercent = Math.min((days / 3) * 100, 100);
+  const hoursPercent = Math.min((hoursDecimal / 5) * 100, 100);
+
+  return { daysPercent, hoursPercent };
+}
+
 export default function App() {
   const [tools, setTools] = useState<AITool[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -531,6 +547,21 @@ export default function App() {
                           </span>
                         )}
                       </div>
+
+                      {acc.resetTime && (() => {
+                        const { daysPercent, hoursPercent } = calculateBarPercentages(acc.resetTime, currentTime);
+                        return (
+                          <div className="reset-bar-container" title={`Remaining: ${Math.floor((acc.resetTime - currentTime) / (1000 * 60 * 60))}h`}>
+                            <div className="reset-bar-segment days-segment">
+                              <div className="reset-bar-fill" style={{ width: `${daysPercent}%` }}></div>
+                            </div>
+                            <div className="reset-bar-divider"></div>
+                            <div className="reset-bar-segment hours-segment">
+                              <div className="reset-bar-fill" style={{ width: `${hoursPercent}%` }}></div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })}
