@@ -94,26 +94,36 @@ function getToolIcon(toolId: string, activeCount: number) {
   }
 }
 
-function calculateBarPercentages(targetTime: number, now: number = Date.now()) {
+function getBarSlotFills(targetTime: number, now: number = Date.now()) {
   const diff = targetTime - now;
   if (diff <= 0) {
-    return { daysPercent: 0, hoursPercent: 0 };
+    return {
+      dayFills: [0, 0, 0],
+      hourFills: [0, 0, 0, 0, 0]
+    };
   }
 
   const totalHours = diff / (1000 * 60 * 60);
   const days = Math.floor(totalHours / 24);
   const hoursDecimal = totalHours % 24;
 
-  // 1 day = 1 unit (max 3 days)
-  // 1 hour = 1 unit (max 5 hours)
-  // Total units = 3 + 5 = 8. Each unit is 12.5% of the total bar width.
-  const dayUnits = Math.min(days, 3);
-  const hourUnits = Math.min(hoursDecimal, 5);
+  // Day fills (index 0 is Day 1, index 1 is Day 2, index 2 is Day 3)
+  const dayFills = [
+    Math.max(0, Math.min(1, days - 0)),
+    Math.max(0, Math.min(1, days - 1)),
+    Math.max(0, Math.min(1, days - 2))
+  ];
 
-  const daysPercent = dayUnits * 12.5;
-  const hoursPercent = hourUnits * 12.5;
+  // Hour fills (index 0 is Hour 1, index 1 is Hour 2, etc.)
+  const hourFills = [
+    Math.max(0, Math.min(1, hoursDecimal - 0)),
+    Math.max(0, Math.min(1, hoursDecimal - 1)),
+    Math.max(0, Math.min(1, hoursDecimal - 2)),
+    Math.max(0, Math.min(1, hoursDecimal - 3)),
+    Math.max(0, Math.min(1, hoursDecimal - 4))
+  ];
 
-  return { daysPercent, hoursPercent };
+  return { dayFills, hourFills };
 }
 
 export default function App() {
@@ -555,11 +565,25 @@ export default function App() {
                       </div>
 
                       {acc.resetTime && (() => {
-                        const { daysPercent, hoursPercent } = calculateBarPercentages(acc.resetTime, currentTime);
+                        const { dayFills, hourFills } = getBarSlotFills(acc.resetTime, currentTime);
                         return (
                           <div className="reset-bar-container" title={`Remaining: ${Math.floor((acc.resetTime - currentTime) / (1000 * 60 * 60))}h`}>
-                            <div className="reset-bar-fill days-fill" style={{ right: `${hoursPercent}%`, width: `${daysPercent}%` }}></div>
-                            <div className="reset-bar-fill hours-fill" style={{ right: 0, width: `${hoursPercent}%` }}></div>
+                            {/* Day slots (from Day 3 to Day 1, left-to-right) */}
+                            {dayFills.slice().reverse().map((fill, idx) => (
+                              <div className="reset-bar-slot" key={`day-${idx}`}>
+                                {fill > 0 && (
+                                  <div className="reset-bar-slot-fill days-fill" style={{ width: `${fill * 100}%` }}></div>
+                                )}
+                              </div>
+                            ))}
+                            {/* Hour slots (from Hour 5 to Hour 1, left-to-right) */}
+                            {hourFills.slice().reverse().map((fill, idx) => (
+                              <div className="reset-bar-slot" key={`hour-${idx}`}>
+                                {fill > 0 && (
+                                  <div className="reset-bar-slot-fill hours-fill" style={{ width: `${fill * 100}%` }}></div>
+                                )}
+                              </div>
+                            ))}
                           </div>
                         );
                       })()}
