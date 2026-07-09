@@ -439,24 +439,11 @@ export default function App() {
                     <div className="account-info-side">
                       <span className={`status-indicator-dot ${isActive ? 'active' : 'exhausted'}`}></span>
                       <span className="account-name">{acc.name}</span>
-                    </div>
-
-                    <div className="account-status-side">
                       {!isActive && (
-                        <div className="account-timer-block">
-                          <span className="countdown-timer">
-                            {acc.resetTime ? formatCountdown(acc.resetTime, currentTime) : '--m --s'}
-                          </span>
-                          {acc.resetTime && (
-                            <span className="reset-date-display">
-                              Resets {formatResetTime(acc.resetTime)}
-                            </span>
-                          )}
-                        </div>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
+                          - reset in. {acc.resetTime ? formatCountdown(acc.resetTime, currentTime) : '--m --s'}
+                        </span>
                       )}
-                      <span className={`badge ${isActive ? 'active' : 'exhausted'}`}>
-                        {isActive ? 'READY' : 'EXHAUSTED'}
-                      </span>
                     </div>
                   </div>
                 );
