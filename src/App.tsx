@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { parseResetTime, formatResetTime, formatVerboseCountdown, formatVerboseResetTime, getRemainingDurationString } from './utils/timeParser';
+import AppWallet from './AppWallet';
 
 // --- DATA STRUCTURES ---
 export interface Account {
@@ -18,6 +19,35 @@ export interface AITool {
   id: string;
   name: string;
   accounts: Account[];
+}
+
+export interface BacklogItem {
+  id: string;
+  title: string;
+  isCompleted: boolean;
+  assignee: string;
+  priority: 'High' | 'Medium' | 'Low';
+  createdAt: number;
+  updatedAt: number;
+  closedAt?: number;
+}
+
+export interface AppProject {
+  id: string;
+  name: string;
+  developer: string;
+  github: string;
+  url: string;
+  hosting: string;
+  database: string;
+  type: string;
+  description: string;
+  techStack: string;
+  techNotes: string;
+  backlog: BacklogItem[];
+  status: 'Development' | 'Production' | 'Maintenance' | 'Deprecated' | string;
+  priority: 'High' | 'Medium' | 'Low' | string;
+  lastUpdated: number;
 }
 
 const STORAGE_KEY = 'token_wallet_data';
@@ -177,6 +207,7 @@ export default function App() {
   });
 
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
+  const [activeTab, setActiveTab] = useState<'token' | 'app'>('token');
   const [activeModal, setActiveModal] = useState<
     | null
     | { type: 'manage-account'; toolId: string; accountId: string }
@@ -494,34 +525,52 @@ export default function App() {
   return (
     <div className="app-wrapper">
       {/* HEADER */}
-      <header>
-        <h1>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect>
-            <line x1="2" y1="10" x2="22" y2="10"></line>
-          </svg>
-          Token Wallet
-        </h1>
-        <div className="header-actions">
-          <button className="btn btn-primary" onClick={() => setActiveModal({ type: 'add-tool' })}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Add AI Tool
-          </button>
-          <button className="btn" onClick={handleOpenSettings}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-            JSON Backup
-          </button>
+      <header style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+            <h1>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+              </svg>
+              My Workspace
+            </h1>
+            <div className="tabs">
+              <button className={`tab-btn ${activeTab === 'token' ? 'active' : ''}`} onClick={() => setActiveTab('token')}>Token Wallet</button>
+              <button className={`tab-btn ${activeTab === 'app' ? 'active' : ''}`} onClick={() => setActiveTab('app')}>App Wallet</button>
+            </div>
+          </div>
+          <div className="header-actions">
+            {activeTab === 'token' && (
+              <>
+                <button className="btn btn-primary" onClick={() => setActiveModal({ type: 'add-tool' })}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  Add AI Tool
+                </button>
+                <button className="btn" onClick={handleOpenSettings}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                  </svg>
+                  JSON Backup
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* GLOBAL STATUS BANNER */}
-      {totalAccounts > 0 && (
+      {/* RENDER APP WALLET TAB */}
+      {activeTab === 'app' && <AppWallet />}
+
+      {/* RENDER TOKEN WALLET TAB */}
+      {activeTab === 'token' && (
+        <>
+          {/* GLOBAL STATUS BANNER */}
+          {totalAccounts > 0 && (
         <div className={`global-status-banner ${allExhausted ? 'all-exhausted' : 'has-active'}`} style={{ padding: '0.75rem 1.25rem', marginBottom: '1.5rem' }}>
           <div className="status-info" style={{ width: '100%', justifyContent: 'space-between', display: 'flex', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -1070,6 +1119,8 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
