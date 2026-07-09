@@ -11,6 +11,7 @@ export interface Account {
   dueDate?: number;     // Payment due date timestamp
   dueAmount?: number;   // Payment amount
   disabled?: boolean;   // When true: grayed out, no countdown
+  loginHint?: string;   // login info hint for user
 }
 
 export interface AITool {
@@ -193,17 +194,33 @@ export default function App() {
   // Due date / amount inputs in modal
   const [dueDateInput, setDueDateInput] = useState('');
   const [dueAmountInput, setDueAmountInput] = useState('');
+  const [noDue, setNoDue] = useState(false);
 
   // New item text states
   const [newToolName, setNewToolName] = useState('');
   const [newAccountName, setNewAccountName] = useState('');
+  const [newLoginHint, setNewLoginHint] = useState('');
   const [toolRenameText, setToolRenameText] = useState('');
   const [accountRenameText, setAccountRenameText] = useState('');
+  const [loginHintInput, setLoginHintInput] = useState('');
 
   // Settings backup/restore states
   const [backupText, setBackupText] = useState('');
   const [importError, setImportError] = useState('');
   const [importSuccess, setImportSuccess] = useState(false);
+
+  // Reset fields when modal is closed
+  useEffect(() => {
+    if (!activeModal) {
+      setNewAccountName('');
+      setNewLoginHint('');
+      setAccountRenameText('');
+      setLoginHintInput('');
+      setDueDateInput('');
+      setDueAmountInput('');
+      setNoDue(false);
+    }
+  }, [activeModal]);
 
   // Keep local storage in sync
   useEffect(() => {
@@ -362,7 +379,11 @@ export default function App() {
           ...t,
           accounts: t.accounts.map(a => {
             if (a.id !== accountId) return a;
-            return { ...a, name: accountRenameText.trim() };
+            return {
+              ...a,
+              name: accountRenameText.trim(),
+              loginHint: loginHintInput.trim() || undefined
+            };
           })
         };
       })
@@ -397,6 +418,7 @@ export default function App() {
             {
               id: newId,
               name: newAccountName.trim(),
+              loginHint: newLoginHint.trim() || undefined,
               status: 'active',
               resetTime: Date.now() + 5 * 60 * 60 * 1000
             }
@@ -405,6 +427,7 @@ export default function App() {
       })
     );
     setNewAccountName('');
+    setNewLoginHint('');
     setActiveModal(null);
   };
 
@@ -608,8 +631,10 @@ export default function App() {
                       className={`account-card ${isDisabled ? 'disabled' : isActive ? 'active' : 'exhausted'}`}
                       onClick={() => {
                         setAccountRenameText(acc.name);
+                        setLoginHintInput(acc.loginHint || '');
                         setDueDateInput(acc.dueDate ? formatDueDateInput(acc.dueDate) : '');
                         setDueAmountInput(acc.dueAmount != null ? String(acc.dueAmount) : '');
+                        setNoDue(!acc.dueDate);
                         if (!isDisabled && acc.resetTime && acc.resetTime > Date.now()) {
                           setCustomResetInput(getRemainingDurationString(acc.resetTime));
                         } else {
@@ -628,7 +653,7 @@ export default function App() {
                         )}
                         {acc.dueDate && (
                           <span className={`due-badge ${dueBadgeClass}`}>
-                            {formatDueDateDisplay(acc.dueDate)}{acc.dueAmount != null ? ` · $${acc.dueAmount}` : ''}
+                            {formatDueDateDisplay(acc.dueDate)}{acc.dueAmount != null ? ` · ₫${acc.dueAmount.toLocaleString('vi-VN')}` : ''}
                           </span>
                         )}
                       </div>
@@ -760,6 +785,16 @@ export default function App() {
                   autoFocus
                 />
               </div>
+              <div className="form-group" style={{ marginTop: '1rem' }}>
+                <label htmlFor="acc-login-hint-input">Login Hint</label>
+                <input
+                  id="acc-login-hint-input"
+                  className="input-text"
+                  placeholder="e.g. user@example.com, username, note..."
+                  value={newLoginHint}
+                  onChange={e => setNewLoginHint(e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="modal-footer">
@@ -843,61 +878,101 @@ export default function App() {
                 </button>
               </div>
 
-              {/* 3. RENAME CONTAINER */}
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                <input
-                  className="input-text"
-                  placeholder="Account name..."
-                  value={accountRenameText}
-                  onChange={e => setAccountRenameText(e.target.value)}
-                />
-                <button
-                  className="btn btn-primary"
-                  disabled={!accountRenameText.trim() || accountRenameText.trim() === selectedAccount.name}
-                  onClick={() => handleRenameAccount(activeModal.toolId, selectedAccount!.id)}
-                >
-                  Update
-                </button>
-              </div>
-
-              {/* 4. PAYMENT DUE DATE & AMOUNT */}
-              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '0.5rem', marginBottom: '1rem' }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 500 }}>Payment Due</div>
+              {/* 3. ACCOUNT DETAILS (NAME & LOGIN HINT) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem' }}>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <input
                     className="input-text"
-                    placeholder="dd-mmm-yyyy (e.g. 15-Aug-2026)"
-                    value={dueDateInput}
-                    onChange={e => setDueDateInput(e.target.value)}
-                    style={{ flex: 2 }}
+                    placeholder="Account name..."
+                    value={accountRenameText}
+                    onChange={e => setAccountRenameText(e.target.value)}
+                    style={{ flex: 1 }}
                   />
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <input
                     className="input-text"
-                    placeholder="Amount ($)"
-                    type="number"
-                    min="0"
-                    value={dueAmountInput}
-                    onChange={e => setDueAmountInput(e.target.value)}
+                    placeholder="Login hint (email, user, note...)"
+                    value={loginHintInput}
+                    onChange={e => setLoginHintInput(e.target.value)}
                     style={{ flex: 1 }}
                   />
                   <button
                     className="btn btn-primary"
-                    onClick={() => {
-                      const parsed = parseDueDateInput(dueDateInput);
-                      const amount = dueAmountInput !== '' ? parseFloat(dueAmountInput) : undefined;
-                      setTools(prev => prev.map(t => t.id !== activeModal.toolId ? t : {
-                        ...t,
-                        accounts: t.accounts.map(a => a.id !== selectedAccount!.id ? a : {
-                          ...a,
-                          dueDate: parsed ?? undefined,
-                          dueAmount: amount
-                        })
-                      }));
-                    }}
+                    disabled={!accountRenameText.trim() || (accountRenameText.trim() === selectedAccount.name && loginHintInput.trim() === (selectedAccount.loginHint || ''))}
+                    onClick={() => handleRenameAccount(activeModal.toolId, selectedAccount!.id)}
                   >
-                    Save
+                    Update
                   </button>
                 </div>
+              </div>
+
+              {/* 4. PAYMENT DUE DATE & AMOUNT */}
+              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '0.5rem', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>Payment Due</span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: 'var(--text-muted)', cursor: 'pointer', marginLeft: 'auto' }}>
+                    <input
+                      type="checkbox"
+                      checked={noDue}
+                      onChange={e => {
+                        setNoDue(e.target.checked);
+                        if (e.target.checked) {
+                          // Immediately clear due date from account
+                          setTools(prev => prev.map(t => t.id !== activeModal.toolId ? t : {
+                            ...t,
+                            accounts: t.accounts.map(a => a.id !== selectedAccount!.id ? a : {
+                              ...a, dueDate: undefined, dueAmount: undefined
+                            })
+                          }));
+                          setDueDateInput('');
+                          setDueAmountInput('');
+                        }
+                      }}
+                    />
+                    No due
+                  </label>
+                </div>
+                {!noDue && (
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      className="input-text"
+                      placeholder="dd-mmm-yyyy (e.g. 15-Aug-2026)"
+                      value={dueDateInput}
+                      onChange={e => setDueDateInput(e.target.value)}
+                      style={{ flex: 2 }}
+                    />
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <span style={{ position: 'absolute', left: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.85rem', pointerEvents: 'none' }}>₫</span>
+                      <input
+                        className="input-text"
+                        placeholder="Amount"
+                        type="number"
+                        min="0"
+                        value={dueAmountInput}
+                        onChange={e => setDueAmountInput(e.target.value)}
+                        style={{ width: '100%', paddingLeft: '1.4rem' }}
+                      />
+                    </div>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        const parsed = parseDueDateInput(dueDateInput);
+                        const amount = dueAmountInput !== '' ? parseFloat(dueAmountInput) : undefined;
+                        setTools(prev => prev.map(t => t.id !== activeModal.toolId ? t : {
+                          ...t,
+                          accounts: t.accounts.map(a => a.id !== selectedAccount!.id ? a : {
+                            ...a,
+                            dueDate: parsed ?? undefined,
+                            dueAmount: amount
+                          })
+                        }));
+                      }}
+                    >
+                      Save
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* 5. DISABLE + DELETE — same row */}
