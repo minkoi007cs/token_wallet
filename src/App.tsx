@@ -660,7 +660,11 @@ export default function App() {
 
             <div className="accounts-grid">
               {[...tool.accounts]
-                .sort((a, b) => (a.resetTime || 0) - (b.resetTime || 0))
+                .sort((a, b) => {
+                  if (a.disabled && !b.disabled) return 1;
+                  if (!a.disabled && b.disabled) return -1;
+                  return (a.resetTime || 0) - (b.resetTime || 0);
+                })
                 .map(acc => {
                   const isActive = acc.status === 'active';
                   const isDisabled = !!acc.disabled;
