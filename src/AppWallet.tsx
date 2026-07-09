@@ -329,7 +329,7 @@ export default function AppWallet() {
         </button>
       </div>
 
-      <div className="tools-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
+      <div className="tools-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
         {apps.map(app => (
           <div key={app.id} className={`tool-card ${app.isDisabled ? 'disabled' : ''}`} style={{ position: 'relative', opacity: app.isDisabled ? 0.6 : 1, transition: 'all 0.2s' }}>
             <div className="tool-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
