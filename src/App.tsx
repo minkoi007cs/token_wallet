@@ -631,28 +631,26 @@ export default function App() {
                   }}
                   onClick={() => handleRestoreAccount(activeModal.toolId, selectedAccount!.id)}
                 >
-                  Remain (Available)
+                  Remain
                 </button>
                 <button
-                  className={`btn`}
+                  className="btn"
                   style={{
                     flex: 1,
                     justifyContent: 'center',
-                    borderColor: 'var(--color-exhausted)',
-                    backgroundColor: selectedAccount.status === 'exhausted' && !customResetInput ? 'var(--color-exhausted)' : (parsedPreview ? 'var(--color-accent)' : 'transparent'),
+                    borderColor: selectedAccount.status === 'exhausted' && !customResetInput ? '#ef4444' : (parsedPreview ? '#ef4444' : 'var(--color-border)'),
+                    backgroundColor: selectedAccount.status === 'exhausted' && !customResetInput ? '#ef4444' : (parsedPreview ? '#ef4444' : 'transparent'),
                     color: '#ffffff',
                     padding: '0.6rem'
                   }}
-                  disabled={!parsedPreview && selectedAccount.status === 'active'}
+                  disabled={!parsedPreview}
                   onClick={() => {
                     if (parsedPreview) {
                       handleMarkExhausted(activeModal.toolId, selectedAccount!.id, parsedPreview, 'custom');
-                    } else if (selectedAccount!.status === 'exhausted') {
-                      setActiveModal(null);
                     }
                   }}
                 >
-                  Run out (Exhausted)
+                  Run Out
                 </button>
               </div>
 
@@ -676,8 +674,8 @@ export default function App() {
               {/* 4. DELETE BUTTON (At the very bottom of the modal body) */}
               <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '1rem' }}>
                 <button
-                  className="btn btn-danger"
-                  style={{ width: '100%', justifyContent: 'center' }}
+                  className="btn"
+                  style={{ width: '100%', justifyContent: 'center', backgroundColor: '#374151', borderColor: '#4b5563', color: '#e5e7eb' }}
                   onClick={() => handleRemoveAccount(activeModal.toolId, selectedAccount!.id)}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
