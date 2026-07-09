@@ -31,17 +31,38 @@ export interface AppProject {
 
 const APP_WALLET_STORAGE_KEY = 'app_wallet_data';
 
+const INITIAL_APP_DATA: AppProject[] = [
+  {
+    id: 'app-initial-1',
+    name: 'Token Wallet',
+    developer: 'Hoa Hoang',
+    github: 'https://github.com/johnnyhoang/TokenWallet',
+    url: '', // User can update this once deployed
+    hosting: 'Vercel',
+    database: 'LocalStorage',
+    type: 'Web App',
+    description: 'A web application to manage AI tool quotas, tokens, and monitor personal portfolio of applications.',
+    techStack: 'React, TypeScript, Vite, Vanilla CSS',
+    techNotes: 'Clean UI with glassmorphism touches and smooth transitions.',
+    backlog: [],
+    status: 'Production',
+    priority: 'High',
+    lastUpdated: Date.now()
+  }
+];
+
 export default function AppWallet() {
   const [apps, setApps] = useState<AppProject[]>(() => {
     const saved = localStorage.getItem(APP_WALLET_STORAGE_KEY);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (parsed.length > 0) return parsed;
       } catch (e) {
         console.error('Failed to parse app wallet local storage', e);
       }
     }
-    return [];
+    return INITIAL_APP_DATA;
   });
 
   const [activeModal, setActiveModal] = useState<
