@@ -721,38 +721,21 @@ header h1 svg {
 
 /* Reset Time Visual Progress Bar Decoration */
 .reset-bar-container {
-  display: flex;
-  width: 270px; /* Keep fixed width */
+  position: relative;
+  width: 270px;
   height: 4px;
-  gap: 1.5px; /* 1.5px gaps separating individual units */
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
   margin-left: 1rem;
   flex-shrink: 0;
-}
-
-.reset-bar-slot {
-  flex: 1;
-  height: 100%;
-  position: relative;
-  background: rgba(255, 255, 255, 0.05); /* Track background for empty cells */
   overflow: hidden;
 }
 
-.reset-bar-slot:first-child {
-  border-top-left-radius: 2px;
-  border-bottom-left-radius: 2px;
-}
-
-.reset-bar-slot:last-child {
-  border-top-right-radius: 2px;
-  border-bottom-right-radius: 2px;
-}
-
-.reset-bar-slot-fill {
+.reset-bar-fill {
   height: 100%;
   position: absolute;
-  right: 0; /* Align fills to the right inside each cell */
-  transition: width 0.3s ease;
-  border-radius: 1px;
+  top: 0;
+  transition: width 0.3s ease, right 0.3s ease;
 }
 
 .days-fill {
@@ -760,7 +743,19 @@ header h1 svg {
 }
 
 .hours-fill {
-  background-color: #facc15; /* Brighter yellow for hours */
+  background-color: #facc15; /* Yellow for hours */
+}
+
+/* Static overlay grid lines — 1px wide, drawn on top, spaced every 12.5% */
+.reset-bar-grid-line {
+  position: absolute;
+  top: 0;
+  width: 1.5px;
+  height: 100%;
+  background-color: #090d16; /* Match app bg so they look like cuts */
+  transform: translateX(-50%);
+  z-index: 2;
+  pointer-events: none;
 }
 
 

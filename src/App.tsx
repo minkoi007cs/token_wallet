@@ -94,42 +94,25 @@ function getToolIcon(toolId: string, activeCount: number) {
   }
 }
 
-function getSegmentedBarSlots(targetTime: number, now: number = Date.now()) {
-  const slots = Array(8).fill(null).map(() => ({ fill: 0, type: 'empty' }));
-  
+function calculateBarPercentages(targetTime: number, now: number = Date.now()) {
   const diff = targetTime - now;
   if (diff <= 0) {
-    return slots;
+    return { daysPercent: 0, hoursPercent: 0 };
   }
 
   const totalHours = diff / (1000 * 60 * 60);
   const days = Math.floor(totalHours / 24);
   const hoursDecimal = totalHours % 24;
 
-  const activeDays = Math.min(days, 3);
-  const activeHours = Math.min(hoursDecimal, 5);
+  // 1 day = 1 unit (max 3 days). 1 hour = 1 unit (max 5 hours).
+  // Total units = 3 + 5 = 8. Each unit is exactly 12.5% of the total bar width.
+  const dayUnits = Math.min(days, 3);
+  const hourUnits = Math.min(hoursDecimal, 5);
 
-  let slotIdx = 0;
+  const daysPercent = dayUnits * 12.5;
+  const hoursPercent = hourUnits * 12.5;
 
-  // 1. Fill Hour slots first (from right to left)
-  let remainingHours = activeHours;
-  while (remainingHours > 0 && slotIdx < 8) {
-    const fillVal = Math.min(remainingHours, 1);
-    slots[slotIdx] = { fill: fillVal, type: 'hours' };
-    remainingHours -= fillVal;
-    slotIdx++;
-  }
-
-  // 2. Fill Day slots next (from right to left)
-  let remainingDays = activeDays;
-  while (remainingDays > 0 && slotIdx < 8) {
-    const fillVal = Math.min(remainingDays, 1);
-    slots[slotIdx] = { fill: fillVal, type: 'days' };
-    remainingDays -= fillVal;
-    slotIdx++;
-  }
-
-  return slots;
+  return { daysPercent, hoursPercent };
 }
 
 export default function App() {
@@ -571,20 +554,21 @@ export default function App() {
                       </div>
 
                       {acc.resetTime && (() => {
-                        const slots = getSegmentedBarSlots(acc.resetTime, currentTime);
+                        const { daysPercent, hoursPercent } = calculateBarPercentages(acc.resetTime, currentTime);
                         return (
                           <div className="reset-bar-container" title={`Remaining: ${Math.floor((acc.resetTime - currentTime) / (1000 * 60 * 60))}h`}>
-                            {/* Render slots from left to right (reversing so index 0 is on the far right) */}
-                            {slots.slice().reverse().map((slot, idx) => (
-                              <div className="reset-bar-slot" key={idx}>
-                                {slot.fill > 0 && (
-                                  <div
-                                    className={`reset-bar-slot-fill ${slot.type === 'days' ? 'days-fill' : 'hours-fill'}`}
-                                    style={{ width: `${slot.fill * 100}%` }}
-                                  ></div>
-                                )}
-                              </div>
-                            ))}
+                            {/* Seamless fills underneath */}
+                            <div className="reset-bar-fill days-fill" style={{ right: `${hoursPercent}%`, width: `${daysPercent}%` }}></div>
+                            <div className="reset-bar-fill hours-fill" style={{ right: 0, width: `${hoursPercent}%` }}></div>
+
+                            {/* Static overlay lines from left to right */}
+                            <div className="reset-bar-grid-line" style={{ left: '12.5%' }}></div>
+                            <div className="reset-bar-grid-line" style={{ left: '25%' }}></div>
+                            <div className="reset-bar-grid-line" style={{ left: '37.5%' }}></div>
+                            <div className="reset-bar-grid-line" style={{ left: '50%' }}></div>
+                            <div className="reset-bar-grid-line" style={{ left: '62.5%' }}></div>
+                            <div className="reset-bar-grid-line" style={{ left: '75%' }}></div>
+                            <div className="reset-bar-grid-line" style={{ left: '87.5%' }}></div>
                           </div>
                         );
                       })()}
