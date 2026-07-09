@@ -753,17 +753,16 @@ header h1 svg {
 .reset-bar-fill {
   height: 100%;
   position: absolute;
+  right: 0; /* Align color fills to the right for both segments */
   transition: width 0.3s ease;
 }
 
 .days-segment .reset-bar-fill {
   background-color: #f97316; /* Keep orange for days */
-  right: 0; /* Day fill is aligned to the right of its segment (touches center divider) */
 }
 
 .hours-segment .reset-bar-fill {
   background-color: #facc15; /* Brighter yellow for hours */
-  left: 0;  /* Hour fill is aligned to the left of its segment (touches center divider) */
 }
 
 .reset-bar-divider {
