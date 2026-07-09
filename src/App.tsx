@@ -599,32 +599,100 @@ export default function App() {
         <div className="modal-overlay" onClick={() => setActiveModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Manage Account ({selectedTool.name})</h3>
+              <h3>{selectedTool.name}</h3>
             </div>
 
             <div className="modal-body">
-              {/* RENAME & DELETE CONTROLS (MOVED TO TOP) */}
-              <div style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '1rem' }}>
-                <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Account Config</h4>
-                <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                  <label htmlFor="acc-rename-text">Rename Account</label>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input
-                      id="acc-rename-text"
-                      className="input-text"
-                      value={accountRenameText}
-                      onChange={e => setAccountRenameText(e.target.value)}
-                    />
-                    <button
-                      className="btn btn-primary"
-                      disabled={!accountRenameText.trim() || accountRenameText.trim() === selectedAccount.name}
-                      onClick={() => handleRenameAccount(activeModal.toolId, selectedAccount!.id)}
-                    >
-                      Rename
-                    </button>
+              {/* 1. TIME TO RESET INPUT (MOVED TO TOP) */}
+              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                <label htmlFor="custom-reset-input" style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem', display: 'block', fontWeight: '500' }}>
+                  Time to reset
+                </label>
+                <input
+                  id="custom-reset-input"
+                  className="input-text"
+                  placeholder="e.g. 5h, 3h 20m, at 16:30, Monday 9am"
+                  value={customResetInput}
+                  onChange={e => setCustomResetInput(e.target.value)}
+                  autoFocus
+                />
+                
+                {/* Countdown / Preview display */}
+                {selectedAccount.status === 'exhausted' && (
+                  <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', background: 'rgba(0,0,0,0.15)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
+                    <div style={{ fontSize: '1.1rem', fontFamily: 'monospace', fontWeight: '700', color: '#f59e0b' }}>
+                      Countdown: {selectedAccount.resetTime ? formatCountdown(selectedAccount.resetTime, currentTime) : '--m --s'}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                      Resets {selectedAccount.resetTime ? formatResetTime(selectedAccount.resetTime) : ''}
+                    </div>
                   </div>
-                </div>
+                )}
+                {customResetInput && parsedPreview && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-active)', marginTop: '0.35rem' }}>
+                    ✓ Understood: Resets {formatResetTime(parsedPreview)}
+                  </div>
+                )}
+              </div>
 
+              {/* 2. 2 TOGGLE STATUS BUTTONS: Remain (xanh) & Run out (đỏ cam) */}
+              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '1.25rem' }}>
+                <button
+                  className={`btn ${selectedAccount.status === 'active' ? 'btn-primary' : ''}`}
+                  style={{
+                    flex: 1,
+                    justifyContent: 'center',
+                    borderColor: selectedAccount.status === 'active' ? 'var(--color-active)' : 'var(--color-border)',
+                    backgroundColor: selectedAccount.status === 'active' ? 'var(--color-active)' : 'transparent',
+                    color: selectedAccount.status === 'active' ? '#ffffff' : 'var(--text-main)',
+                    padding: '0.6rem'
+                  }}
+                  onClick={() => handleRestoreAccount(activeModal.toolId, selectedAccount!.id)}
+                >
+                  Remain (Available)
+                </button>
+                <button
+                  className={`btn`}
+                  style={{
+                    flex: 1,
+                    justifyContent: 'center',
+                    borderColor: 'var(--color-exhausted)',
+                    backgroundColor: selectedAccount.status === 'exhausted' && !customResetInput ? 'var(--color-exhausted)' : (parsedPreview ? 'var(--color-accent)' : 'transparent'),
+                    color: '#ffffff',
+                    padding: '0.6rem'
+                  }}
+                  disabled={!parsedPreview && selectedAccount.status === 'active'}
+                  onClick={() => {
+                    if (parsedPreview) {
+                      handleMarkExhausted(activeModal.toolId, selectedAccount!.id, parsedPreview, 'custom');
+                    } else if (selectedAccount!.status === 'exhausted') {
+                      setActiveModal(null);
+                    }
+                  }}
+                >
+                  Run out (Exhausted)
+                </button>
+              </div>
+
+              {/* 3. RENAME CONTAINER (Rename label removed, Update button used) */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                <input
+                  className="input-text"
+                  placeholder="Account name..."
+                  value={accountRenameText}
+                  onChange={e => setAccountRenameText(e.target.value)}
+                />
+                <button
+                  className="btn btn-primary"
+                  disabled={!accountRenameText.trim() || accountRenameText.trim() === selectedAccount.name}
+                  onClick={() => handleRenameAccount(activeModal.toolId, selectedAccount!.id)}
+                >
+                  Update
+                </button>
+              </div>
+
+              {/* 4. DELETE BUTTON (At the very bottom of the modal body) */}
+              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '1rem' }}>
                 <button
                   className="btn btn-danger"
                   style={{ width: '100%', justifyContent: 'center' }}
@@ -636,86 +704,6 @@ export default function App() {
                   </svg>
                   Delete Account
                 </button>
-              </div>
-
-              {/* QUOTA CONTROLS */}
-              <div style={{ padding: '1rem', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
-                <h4 style={{ fontSize: '0.9rem', color: '#ffffff', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quota Status</h4>
-                
-                {/* 2 TOGGLE STATUS BUTTONS: Remain & Run out */}
-                <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                  <button
-                    className={`btn ${selectedAccount.status === 'active' ? 'btn-primary' : ''}`}
-                    style={{
-                      flex: 1,
-                      justifyContent: 'center',
-                      borderColor: selectedAccount.status === 'active' ? 'var(--color-active)' : 'var(--color-border)',
-                      backgroundColor: selectedAccount.status === 'active' ? 'var(--color-active)' : 'transparent',
-                      color: selectedAccount.status === 'active' ? '#ffffff' : 'var(--text-main)'
-                    }}
-                    onClick={() => handleRestoreAccount(activeModal.toolId, selectedAccount!.id)}
-                  >
-                    Remain (Available)
-                  </button>
-                  <button
-                    className={`btn ${selectedAccount.status === 'exhausted' ? 'btn-primary' : ''}`}
-                    style={{
-                      flex: 1,
-                      justifyContent: 'center',
-                      borderColor: selectedAccount.status === 'exhausted' ? 'var(--color-exhausted)' : 'var(--color-border)',
-                      backgroundColor: selectedAccount.status === 'exhausted' ? 'var(--color-exhausted)' : 'transparent',
-                      color: selectedAccount.status === 'exhausted' ? '#ffffff' : 'var(--text-main)'
-                    }}
-                    onClick={() => {
-                      // Visual button state. Clicking it focuses user on the reset time inputs below
-                    }}
-                  >
-                    Run out (Exhausted)
-                  </button>
-                </div>
-
-                {/* SHOW LIVE COUNTDOWN IF EXHAUSTED */}
-                {selectedAccount.status === 'exhausted' && (
-                  <div style={{ marginBottom: '1.25rem', padding: '0.75rem', background: 'rgba(0,0,0,0.15)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
-                    <div style={{ fontSize: '1.2rem', fontFamily: 'monospace', fontWeight: '700', color: '#f59e0b' }}>
-                      Countdown: {selectedAccount.resetTime ? formatCountdown(selectedAccount.resetTime, currentTime) : '--m --s'}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                      Resets {selectedAccount.resetTime ? formatResetTime(selectedAccount.resetTime) : ''}
-                    </div>
-                  </div>
-                )}
-
-                {/* SINGLE RESET TIME INPUT (reset in / at) */}
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label>{selectedAccount.status === 'active' ? 'Set Reset Time to Run Out' : 'Adjust Reset Time'}</label>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input
-                      className="input-text"
-                      style={{ padding: '0.5rem 0.75rem', fontSize: '0.9rem' }}
-                      placeholder="e.g. 5h, 3h 20m, at 16:30, Monday 9am"
-                      value={customResetInput}
-                      onChange={e => setCustomResetInput(e.target.value)}
-                    />
-                    <button
-                      className="btn btn-primary"
-                      style={{ padding: '0.5rem 1rem' }}
-                      disabled={!parsedPreview}
-                      onClick={() => {
-                        if (parsedPreview) {
-                          handleMarkExhausted(activeModal.toolId, selectedAccount!.id, parsedPreview, 'custom');
-                        }
-                      }}
-                    >
-                      Confirm
-                    </button>
-                  </div>
-                  {customResetInput && parsedPreview && (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-active)', marginTop: '0.35rem' }}>
-                      Understood: Resets {formatResetTime(parsedPreview)}
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </div>
