@@ -660,7 +660,7 @@ export default function App() {
 
             <div className="accounts-grid">
               {[...tool.accounts]
-                .sort((a, b) => a.name.localeCompare(b.name))
+                .sort((a, b) => a.resetTime - b.resetTime)
                 .map(acc => {
                   const isActive = acc.status === 'active';
                   const isDisabled = !!acc.disabled;
