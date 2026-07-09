@@ -9,7 +9,7 @@
  *  - Date+Time:  "Jun 12 2:36PM", "12 Jun 2:36PM", "Jun 12 2026 14:30"
  */
 export function parseResetTime(input: string): number | null {
-  const cleanInput = input.trim().toLowerCase();
+  const cleanInput = input.trim().toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ');
   if (!cleanInput) return null;
 
   const now = new Date();
