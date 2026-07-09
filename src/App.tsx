@@ -900,12 +900,12 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 5. DISABLE / ENABLE TOGGLE */}
-              <div style={{ marginBottom: '1rem' }}>
+              {/* 5. DISABLE + DELETE — same row */}
+              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
                 <button
                   className="btn"
                   style={{
-                    width: '100%', justifyContent: 'center',
+                    flex: 1, justifyContent: 'center',
                     backgroundColor: selectedAccount.disabled ? '#1d4ed8' : '#374151',
                     borderColor: selectedAccount.disabled ? '#3b82f6' : '#4b5563',
                     color: '#e5e7eb'
@@ -913,30 +913,23 @@ export default function App() {
                   onClick={() => {
                     setTools(prev => prev.map(t => t.id !== activeModal.toolId ? t : {
                       ...t,
-                      accounts: t.accounts.map(a => a.id !== selectedAccount!.id ? a : {
-                        ...a,
-                        disabled: !a.disabled
-                      })
+                      accounts: t.accounts.map(a => a.id !== selectedAccount!.id ? a : { ...a, disabled: !a.disabled })
                     }));
                     setActiveModal(null);
                   }}
                 >
-                  {selectedAccount.disabled ? '▶ Enable Account' : '⏸ Disable Account'}
+                  {selectedAccount.disabled ? '▶ Enable' : '⏸ Disable'}
                 </button>
-              </div>
-
-              {/* 6. DELETE BUTTON */}
-              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
                 <button
                   className="btn"
-                  style={{ width: '100%', justifyContent: 'center', backgroundColor: '#374151', borderColor: '#4b5563', color: '#e5e7eb' }}
+                  style={{ flex: 1, justifyContent: 'center', backgroundColor: '#374151', borderColor: '#4b5563', color: '#e5e7eb' }}
                   onClick={() => handleRemoveAccount(activeModal.toolId, selectedAccount!.id)}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="3 6 5 6 21 6"></polyline>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                   </svg>
-                  Delete Account
+                  Delete
                 </button>
               </div>
             </div>
