@@ -758,5 +758,52 @@ header h1 svg {
   pointer-events: none;
 }
 
+/* ── Disabled account card ── */
+.account-card.disabled {
+  opacity: 0.4;
+  filter: grayscale(1);
+  cursor: pointer;
+}
+
+.status-indicator-dot.disabled {
+  background-color: #6b7280;
+  box-shadow: none;
+}
+
+/* ── Payment due badges ── */
+.due-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  letter-spacing: 0.02em;
+}
+
+.due-badge.due-ok {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.25);
+}
+
+.due-badge.due-soon {
+  color: #facc15;
+  background: rgba(250, 204, 21, 0.12);
+  border: 1px solid rgba(250, 204, 21, 0.25);
+}
+
+.due-badge.due-overdue {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  animation: blink-overdue 1s ease-in-out infinite;
+}
+
+@keyframes blink-overdue {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+
 
 

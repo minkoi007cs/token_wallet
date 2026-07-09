@@ -7,7 +7,10 @@ export interface Account {
   name: string;
   status: 'active' | 'exhausted';
   exhaustedType?: '5h' | 'weekly' | 'custom';
-  resetTime?: number; // Epoch timestamp in ms
+  resetTime?: number;   // Epoch timestamp in ms
+  dueDate?: number;     // Payment due date timestamp
+  dueAmount?: number;   // Payment amount
+  disabled?: boolean;   // When true: grayed out, no countdown
 }
 
 export interface AITool {
@@ -115,6 +118,37 @@ function calculateBarPercentages(targetTime: number, now: number = Date.now()) {
   return { daysPercent, hoursPercent };
 }
 
+// --- Due date helpers ---
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+/** Format a timestamp as dd-mmm-yyyy for display on the card */
+function formatDueDateDisplay(ts: number): string {
+  const d = new Date(ts);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mmm = MONTH_NAMES[d.getMonth()];
+  const yyyy = d.getFullYear();
+  return `${dd}-${mmm}-${yyyy}`;
+}
+
+/** Format a timestamp as dd-mmm-yyyy for the input textbox */
+function formatDueDateInput(ts: number): string {
+  return formatDueDateDisplay(ts);
+}
+
+/** Parse dd-mmm-yyyy or similar into a timestamp. Returns null if invalid. */
+function parseDueDateInput(input: string): number | null {
+  if (!input.trim()) return null;
+  // Try dd-mmm-yyyy or dd/mmm/yyyy or dd mmm yyyy
+  const m = input.trim().match(/^(\d{1,2})[-\/\s]([a-zA-Z]+)[-\/\s](\d{4})$/);
+  if (!m) return null;
+  const day = parseInt(m[1], 10);
+  const monthIdx = MONTH_NAMES.findIndex(mn => mn.toLowerCase() === m[2].toLowerCase().slice(0, 3));
+  const year = parseInt(m[3], 10);
+  if (monthIdx === -1 || day < 1 || day > 31) return null;
+  const d = new Date(year, monthIdx, day, 0, 0, 0, 0);
+  return isNaN(d.getTime()) ? null : d.getTime();
+}
+
 export default function App() {
   const [tools, setTools] = useState<AITool[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -156,6 +190,10 @@ export default function App() {
   const [parsedPreview, setParsedPreview] = useState<number | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
 
+  // Due date / amount inputs in modal
+  const [dueDateInput, setDueDateInput] = useState('');
+  const [dueAmountInput, setDueAmountInput] = useState('');
+
   // New item text states
   const [newToolName, setNewToolName] = useState('');
   const [newAccountName, setNewAccountName] = useState('');
@@ -181,6 +219,8 @@ export default function App() {
       let updated = false;
       const nextTools = tools.map(tool => {
         const nextAccounts = tool.accounts.map(acc => {
+          // Skip disabled accounts — no rollover
+          if (acc.disabled) return acc;
           if (acc.resetTime && acc.resetTime <= now) {
             updated = true;
             let nextReset = acc.resetTime;
@@ -551,13 +591,26 @@ export default function App() {
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map(acc => {
                   const isActive = acc.status === 'active';
+                  const isDisabled = !!acc.disabled;
+
+                  // Due date badge colour
+                  let dueBadgeClass = '';
+                  if (acc.dueDate) {
+                    const daysUntilDue = (acc.dueDate - currentTime) / (1000 * 60 * 60 * 24);
+                    if (daysUntilDue < 0)        dueBadgeClass = 'due-overdue';
+                    else if (daysUntilDue <= 5)  dueBadgeClass = 'due-soon';
+                    else                          dueBadgeClass = 'due-ok';
+                  }
+
                   return (
                     <div
                       key={acc.id}
-                      className={`account-card ${isActive ? 'active' : 'exhausted'}`}
+                      className={`account-card ${isDisabled ? 'disabled' : isActive ? 'active' : 'exhausted'}`}
                       onClick={() => {
                         setAccountRenameText(acc.name);
-                        if (acc.resetTime && acc.resetTime > Date.now()) {
+                        setDueDateInput(acc.dueDate ? formatDueDateInput(acc.dueDate) : '');
+                        setDueAmountInput(acc.dueAmount != null ? String(acc.dueAmount) : '');
+                        if (!isDisabled && acc.resetTime && acc.resetTime > Date.now()) {
                           setCustomResetInput(getRemainingDurationString(acc.resetTime));
                         } else {
                           setCustomResetInput('5 hours');
@@ -566,24 +619,26 @@ export default function App() {
                       }}
                     >
                       <div className="account-info-side">
-                        <span className={`status-indicator-dot ${isActive ? 'active' : 'exhausted'}`}></span>
+                        <span className={`status-indicator-dot ${isDisabled ? 'disabled' : isActive ? 'active' : 'exhausted'}`}></span>
                         <span className="account-name">{acc.name}</span>
-                        {acc.resetTime && (
+                        {!isDisabled && acc.resetTime && (
                           <span className="reset-time-inline">
                             - Resets {formatResetTime(acc.resetTime)}
                           </span>
                         )}
+                        {acc.dueDate && (
+                          <span className={`due-badge ${dueBadgeClass}`}>
+                            {formatDueDateDisplay(acc.dueDate)}{acc.dueAmount != null ? ` · $${acc.dueAmount}` : ''}
+                          </span>
+                        )}
                       </div>
 
-                      {acc.resetTime && (() => {
+                      {!isDisabled && acc.resetTime && (() => {
                         const { daysPercent, hoursPercent } = calculateBarPercentages(acc.resetTime, currentTime);
                         return (
                           <div className="reset-bar-container" title={`Remaining: ${Math.floor((acc.resetTime - currentTime) / (1000 * 60 * 60))}h`}>
-                            {/* Seamless fills underneath */}
                             <div className="reset-bar-fill days-fill" style={{ right: `${hoursPercent}%`, width: `${daysPercent}%` }}></div>
                             <div className="reset-bar-fill hours-fill" style={{ right: 0, width: `${hoursPercent}%` }}></div>
-
-                            {/* Static overlay lines from left to right */}
                             <div className="reset-bar-grid-line" style={{ left: '12.5%' }}></div>
                             <div className="reset-bar-grid-line" style={{ left: '25%' }}></div>
                             <div className="reset-bar-grid-line" style={{ left: '37.5%' }}></div>
@@ -788,7 +843,7 @@ export default function App() {
                 </button>
               </div>
 
-              {/* 3. RENAME CONTAINER (Rename label removed, Update button used) */}
+              {/* 3. RENAME CONTAINER */}
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
                 <input
                   className="input-text"
@@ -805,8 +860,73 @@ export default function App() {
                 </button>
               </div>
 
-              {/* 4. DELETE BUTTON (At the very bottom of the modal body) */}
-              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '1rem' }}>
+              {/* 4. PAYMENT DUE DATE & AMOUNT */}
+              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '0.5rem', marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 500 }}>Payment Due</div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    className="input-text"
+                    placeholder="dd-mmm-yyyy (e.g. 15-Aug-2026)"
+                    value={dueDateInput}
+                    onChange={e => setDueDateInput(e.target.value)}
+                    style={{ flex: 2 }}
+                  />
+                  <input
+                    className="input-text"
+                    placeholder="Amount ($)"
+                    type="number"
+                    min="0"
+                    value={dueAmountInput}
+                    onChange={e => setDueAmountInput(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      const parsed = parseDueDateInput(dueDateInput);
+                      const amount = dueAmountInput !== '' ? parseFloat(dueAmountInput) : undefined;
+                      setTools(prev => prev.map(t => t.id !== activeModal.toolId ? t : {
+                        ...t,
+                        accounts: t.accounts.map(a => a.id !== selectedAccount!.id ? a : {
+                          ...a,
+                          dueDate: parsed ?? undefined,
+                          dueAmount: amount
+                        })
+                      }));
+                    }}
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+
+              {/* 5. DISABLE / ENABLE TOGGLE */}
+              <div style={{ marginBottom: '1rem' }}>
+                <button
+                  className="btn"
+                  style={{
+                    width: '100%', justifyContent: 'center',
+                    backgroundColor: selectedAccount.disabled ? '#1d4ed8' : '#374151',
+                    borderColor: selectedAccount.disabled ? '#3b82f6' : '#4b5563',
+                    color: '#e5e7eb'
+                  }}
+                  onClick={() => {
+                    setTools(prev => prev.map(t => t.id !== activeModal.toolId ? t : {
+                      ...t,
+                      accounts: t.accounts.map(a => a.id !== selectedAccount!.id ? a : {
+                        ...a,
+                        disabled: !a.disabled
+                      })
+                    }));
+                    setActiveModal(null);
+                  }}
+                >
+                  {selectedAccount.disabled ? '▶ Enable Account' : '⏸ Disable Account'}
+                </button>
+              </div>
+
+              {/* 6. DELETE BUTTON */}
+              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
                 <button
                   className="btn"
                   style={{ width: '100%', justifyContent: 'center', backgroundColor: '#374151', borderColor: '#4b5563', color: '#e5e7eb' }}
