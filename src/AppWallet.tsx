@@ -227,106 +227,121 @@ export default function AppWallet() {
                 </svg>
               </button>
             </div>
-            <div className="modal-body" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div className="modal-body" style={{ padding: '0', display: 'flex', flexDirection: 'column' }}>
               
               {/* APP INFO SECTION */}
-              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
-                  <label>App Name <span style={{color: 'red'}}>*</span></label>
-                  <input type="text" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="My Awesome App" />
-                </div>
-                <div className="form-group">
-                  <label>URL</label>
-                  <input type="text" value={formData.url || ''} onChange={e => setFormData({...formData, url: e.target.value})} placeholder="https://..." />
-                </div>
-                <div className="form-group">
-                  <label>Developer / Assignee</label>
-                  <input type="text" value={formData.developer || ''} onChange={e => setFormData({...formData, developer: e.target.value})} />
-                </div>
-                <div className="form-group">
-                  <label>GitHub Repo</label>
-                  <input type="text" value={formData.github || ''} onChange={e => setFormData({...formData, github: e.target.value})} />
-                </div>
-                <div className="form-group">
-                  <label>Type</label>
-                  <select value={formData.type || ''} onChange={e => setFormData({...formData, type: e.target.value})}>
-                    <option>Web App</option>
-                    <option>Android App</option>
-                    <option>iOS App</option>
-                    <option>Desktop App</option>
-                    <option>Other</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Status</label>
-                  <select value={formData.status || ''} onChange={e => setFormData({...formData, status: e.target.value})}>
-                    <option>Development</option>
-                    <option>Production</option>
-                    <option>Maintenance</option>
-                    <option>Deprecated</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Hosting Provider</label>
-                  <input type="text" value={formData.hosting || ''} onChange={e => setFormData({...formData, hosting: e.target.value})} placeholder="Vercel, Render, AWS..." />
-                </div>
-                <div className="form-group">
-                  <label>Database</label>
-                  <input type="text" value={formData.database || ''} onChange={e => setFormData({...formData, database: e.target.value})} placeholder="PostgreSQL, MongoDB..." />
-                </div>
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label>Description</label>
-                  <textarea value={formData.description || ''} onChange={e => setFormData({...formData, description: e.target.value})} rows={2} />
-                </div>
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label>Tech Stack</label>
-                  <textarea value={formData.techStack || ''} onChange={e => setFormData({...formData, techStack: e.target.value})} rows={2} placeholder="React, Node.js, Tailwind..." />
-                </div>
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label>Technical Notes</label>
-                  <textarea value={formData.techNotes || ''} onChange={e => setFormData({...formData, techNotes: e.target.value})} rows={3} />
+              <div style={{ padding: '1.5rem', backgroundColor: 'var(--bg-card)' }}>
+                <h4 style={{ marginBottom: '1.25rem', color: 'var(--text-main)', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>Project Details</h4>
+                <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>App Name <span style={{color: '#ef4444'}}>*</span></label>
+                    <input className="input-text" type="text" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="My Awesome App" />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>URL</label>
+                    <input className="input-text" type="text" value={formData.url || ''} onChange={e => setFormData({...formData, url: e.target.value})} placeholder="https://..." />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Developer / Assignee</label>
+                    <input className="input-text" type="text" value={formData.developer || ''} onChange={e => setFormData({...formData, developer: e.target.value})} placeholder="e.g. John Doe" />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>GitHub Repo</label>
+                    <input className="input-text" type="text" value={formData.github || ''} onChange={e => setFormData({...formData, github: e.target.value})} placeholder="https://github.com/..." />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Type</label>
+                    <select className="input-select" value={formData.type || ''} onChange={e => setFormData({...formData, type: e.target.value})}>
+                      <option>Web App</option>
+                      <option>Android App</option>
+                      <option>iOS App</option>
+                      <option>Desktop App</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Status</label>
+                    <select className="input-select" value={formData.status || ''} onChange={e => setFormData({...formData, status: e.target.value})}>
+                      <option>Development</option>
+                      <option>Production</option>
+                      <option>Maintenance</option>
+                      <option>Deprecated</option>
+                    </select>
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Hosting Provider</label>
+                    <input className="input-text" type="text" value={formData.hosting || ''} onChange={e => setFormData({...formData, hosting: e.target.value})} placeholder="Vercel, Render, AWS..." />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Database</label>
+                    <input className="input-text" type="text" value={formData.database || ''} onChange={e => setFormData({...formData, database: e.target.value})} placeholder="PostgreSQL, MongoDB..." />
+                  </div>
+                  <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
+                    <label>Description</label>
+                    <textarea className="input-text" style={{ resize: 'vertical', minHeight: '60px' }} value={formData.description || ''} onChange={e => setFormData({...formData, description: e.target.value})} rows={2} placeholder="Briefly describe what this project does..." />
+                  </div>
+                  <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
+                    <label>Tech Stack</label>
+                    <textarea className="input-text" style={{ resize: 'vertical', minHeight: '60px' }} value={formData.techStack || ''} onChange={e => setFormData({...formData, techStack: e.target.value})} rows={2} placeholder="React, Node.js, Tailwind..." />
+                  </div>
+                  <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
+                    <label>Technical Notes</label>
+                    <textarea className="input-text" style={{ resize: 'vertical', minHeight: '80px' }} value={formData.techNotes || ''} onChange={e => setFormData({...formData, techNotes: e.target.value})} rows={3} placeholder="Important architecture decisions, credentials info, etc." />
+                  </div>
                 </div>
               </div>
 
-              <hr style={{ borderColor: 'var(--color-border)', margin: '1rem 0' }} />
-
               {/* BACKLOG SECTION */}
-              <div className="backlog-section">
-                <h4 style={{ marginBottom: '1rem' }}>Backlog & Tasks</h4>
+              <div className="backlog-section" style={{ padding: '1.5rem', backgroundColor: 'var(--bg-secondary)', borderTop: '1px solid var(--color-border)' }}>
+                <h4 style={{ marginBottom: '1.25rem', color: 'var(--text-main)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  Backlog & Tasks
+                  <span className="badge" style={{ backgroundColor: 'rgba(99, 102, 241, 0.2)', color: 'var(--color-active)', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.8rem' }}>
+                    {backlogItems.filter(b => b.isCompleted).length} / {backlogItems.length} Done
+                  </span>
+                </h4>
                 
-                <div className="backlog-add" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'flex-start' }}>
+                <div className="backlog-add" style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', alignItems: 'flex-start', background: 'var(--bg-card)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
                   <div style={{ flex: 2 }}>
-                    <input type="text" placeholder="Task title..." value={newBacklogTitle} onChange={e => setNewBacklogTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddBacklogItem()} />
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', display: 'block' }}>Task Title</label>
+                    <input className="input-text" type="text" placeholder="e.g. Implement OAuth login" value={newBacklogTitle} onChange={e => setNewBacklogTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddBacklogItem()} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <input type="text" placeholder="Assignee..." value={newBacklogAssignee} onChange={e => setNewBacklogAssignee(e.target.value)} />
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', display: 'block' }}>Assignee</label>
+                    <input className="input-text" type="text" placeholder="@someone" value={newBacklogAssignee} onChange={e => setNewBacklogAssignee(e.target.value)} />
                   </div>
                   <div>
-                    <select value={newBacklogPriority} onChange={e => setNewBacklogPriority(e.target.value as any)} style={{ height: '40px' }}>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', display: 'block' }}>Priority</label>
+                    <select className="input-select" value={newBacklogPriority} onChange={e => setNewBacklogPriority(e.target.value as any)}>
                       <option value="High">High</option>
                       <option value="Medium">Medium</option>
                       <option value="Low">Low</option>
                     </select>
                   </div>
-                  <button className="btn btn-primary" onClick={handleAddBacklogItem} style={{ height: '40px', padding: '0 1rem' }}>Add</button>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', height: '100%' }}>
+                    <button className="btn btn-primary" onClick={handleAddBacklogItem} style={{ marginTop: '1.4rem' }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="backlog-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {backlogItems.length === 0 ? (
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>No tasks in backlog.</p>
+                    <div style={{ textAlign: 'center', padding: '2rem', border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)' }}>
+                      <p>No tasks yet. Add a task above to get started.</p>
+                    </div>
                   ) : (
                     backlogItems.map(item => (
-                      <div key={item.id} className={`backlog-item ${item.isCompleted ? 'completed' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '6px', borderLeft: `3px solid ${item.priority === 'High' ? '#ef4444' : item.priority === 'Medium' ? '#f59e0b' : '#3b82f6'}` }}>
-                        <input type="checkbox" checked={item.isCompleted} onChange={() => handleToggleBacklogItem(item.id)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                        <div style={{ flex: 1, textDecoration: item.isCompleted ? 'line-through' : 'none', color: item.isCompleted ? 'var(--text-muted)' : 'inherit' }}>
-                          <div style={{ fontWeight: '500' }}>{item.title}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', gap: '1rem' }}>
-                            {item.assignee && <span>👤 {item.assignee}</span>}
-                            <span>🕒 {formatDate(item.updatedAt)}</span>
-                            {item.closedAt && <span>✓ Closed: {formatDate(item.closedAt)}</span>}
+                      <div key={item.id} className={`backlog-item ${item.isCompleted ? 'completed' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', borderLeft: `4px solid ${item.priority === 'High' ? '#ef4444' : item.priority === 'Medium' ? '#f59e0b' : '#3b82f6'}`, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                        <input type="checkbox" checked={item.isCompleted} onChange={() => handleToggleBacklogItem(item.id)} style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: 'var(--color-active)' }} />
+                        <div style={{ flex: 1, textDecoration: item.isCompleted ? 'line-through' : 'none', opacity: item.isCompleted ? 0.6 : 1 }}>
+                          <div style={{ fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>{item.title}</div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.35rem', display: 'flex', gap: '1.25rem' }}>
+                            {item.assignee && <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> {item.assignee}</span>}
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> {formatDate(item.updatedAt)}</span>
+                            {item.closedAt && <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.2rem' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"></polyline></svg> {formatDate(item.closedAt)}</span>}
                           </div>
                         </div>
-                        <button className="btn btn-sm" onClick={() => handleDeleteBacklogItem(item.id)} style={{ color: '#ef4444', backgroundColor: 'transparent', border: 'none' }}>
+                        <button className="btn" onClick={() => handleDeleteBacklogItem(item.id)} style={{ padding: '0.4rem', color: '#ef4444', borderColor: 'transparent', backgroundColor: 'rgba(239, 68, 68, 0.1)' }} title="Delete Task">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
                       </div>
