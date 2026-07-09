@@ -479,7 +479,7 @@ export default function App() {
                     className={`account-card ${isActive ? 'active' : 'exhausted'}`}
                     onClick={() => {
                       setAccountRenameText(acc.name);
-                      if (acc.status === 'exhausted' && acc.resetTime) {
+                      if (acc.resetTime && acc.resetTime > Date.now()) {
                         setCustomResetInput(getRemainingDurationString(acc.resetTime));
                       } else {
                         setCustomResetInput('5h');
