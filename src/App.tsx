@@ -538,7 +538,7 @@ export default function App() {
                         if (acc.resetTime && acc.resetTime > Date.now()) {
                           setCustomResetInput(getRemainingDurationString(acc.resetTime));
                         } else {
-                          setCustomResetInput('5h');
+                          setCustomResetInput('5 hours');
                         }
                         setActiveModal({ type: 'manage-account', toolId: tool.id, accountId: acc.id });
                       }}

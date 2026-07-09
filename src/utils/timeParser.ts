@@ -201,17 +201,22 @@ export function formatVerboseResetTime(targetTime: number): string {
 }
 
 /**
- * Returns a compact duration string like "4h 52m" or "25m" for remaining time
+ * Returns a duration string always split as "X days Y hours Z min"
+ * e.g. 49h 59m → "2 days 1 hours 59 min", 3h 20m → "0 days 3 hours 20 min"
  */
 export function getRemainingDurationString(targetTime: number, now: number = Date.now()): string {
   const diff = targetTime - now;
-  if (diff <= 0) return '5h';
-  const minutes = Math.ceil(diff / (1000 * 60));
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  if (hours > 0) {
-    return `${hours}h${mins > 0 ? ` ${mins}m` : ''}`;
-  }
-  return `${mins}m`;
-}
+  if (diff <= 0) return '0 days 5 hours 0 min';
 
+  const totalMinutes = Math.floor(diff / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const mins = totalMinutes % 60;
+
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
+  if (hours > 0) parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+  if (mins > 0) parts.push(`${mins} min`);
+
+  return parts.length > 0 ? parts.join(' ') : '0 min';
+}
