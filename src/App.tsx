@@ -447,9 +447,9 @@ export default function App() {
                     <div className="account-info-side">
                       <span className={`status-indicator-dot ${isActive ? 'active' : 'exhausted'}`}></span>
                       <span className="account-name">{acc.name}</span>
-                      {!isActive && (
+                      {!isActive && acc.resetTime && (
                         <span className="reset-time-inline">
-                          - reset in. {acc.resetTime ? formatCountdown(acc.resetTime, currentTime) : '--m --s'}
+                          - Resets {formatResetTime(acc.resetTime)}
                         </span>
                       )}
                     </div>
