@@ -255,19 +255,20 @@ export default function App() {
   );
   const allExhausted = totalAccounts > 0 && exhaustedAccounts === totalAccounts;
 
-  // Find latest reset time when all are exhausted
-  let latestResetTime = 0;
+  // Find soonest reset time when all are exhausted
+  let soonestResetTime = Infinity;
   if (allExhausted) {
     tools.forEach(tool => {
       tool.accounts.forEach(acc => {
         if (acc.status === 'exhausted' && acc.resetTime) {
-          if (acc.resetTime > latestResetTime) {
-            latestResetTime = acc.resetTime;
+          if (acc.resetTime < soonestResetTime) {
+            soonestResetTime = acc.resetTime;
           }
         }
       });
     });
   }
+  if (soonestResetTime === Infinity) soonestResetTime = 0;
 
   // Action handlers
   const handleMarkExhausted = (toolId: string, accountId: string, resetTime: number, type: '5h' | 'weekly' | 'custom') => {
@@ -464,7 +465,7 @@ export default function App() {
               <span className={`status-indicator-dot ${allExhausted ? 'exhausted' : 'active'}`}></span>
               <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>
                 {allExhausted ? (
-                  `ready for work at latest ${formatVerboseCountdown(latestResetTime, currentTime)} (${formatVerboseResetTime(latestResetTime)})`
+                  `ready for work at soonest ${formatVerboseCountdown(soonestResetTime, currentTime)} (${formatVerboseResetTime(soonestResetTime)})`
                 ) : (
                   `Currently, you have ${totalAccounts - exhaustedAccounts} of ${totalAccounts} accounts ready for work.`
                 )}
