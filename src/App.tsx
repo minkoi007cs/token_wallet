@@ -45,6 +45,49 @@ const DEFAULT_DATA: AITool[] = [
   }
 ];
 
+function getToolIcon(toolId: string, activeCount: number) {
+  const color = activeCount > 0 ? 'var(--color-active)' : 'var(--color-exhausted)';
+  switch (toolId.toLowerCase()) {
+    case 'codex':
+      // GitHub Copilot / Codex AI helper face icon
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color, marginRight: '0.4rem' }}>
+          <path d="M12 2a5 5 0 0 0-5 5v3a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5z" />
+          <path d="M19 11v1a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-1" />
+          <circle cx="9.5" cy="8.5" r="1.5" fill="currentColor" stroke="none" />
+          <circle cx="14.5" cy="8.5" r="1.5" fill="currentColor" stroke="none" />
+          <path d="M9 13.5c1.5 1 4.5 1 6 0" />
+        </svg>
+      );
+    case 'claudecode':
+      // Anthropic Claude stylized swirl/footprint monogram
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color, marginRight: '0.4rem' }}>
+          <path d="M12 3a9 9 0 0 0-9 9c0 2 .7 3.9 1.8 5.4L6.4 16A7 7 0 0 1 5 12a7 7 0 0 1 7-7 7 7 0 0 1 7 7c0 1.5-.5 2.9-1.4 4l1.6 1.4A9 9 0 0 0 21 12a9 9 0 0 0-9-9z" />
+          <path d="M12 7a5 5 0 0 0-5 5c0 1.2.4 2.3 1.1 3.2l1.6-1.2A3 3 0 0 1 9 12a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 .7-.2 1.3-.6 1.8l1.6 1.2c.7-.9 1-2 .1-3.2a5 5 0 0 0-5-5z" />
+          <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    case 'antigravity':
+      // Google Gemini double sparkles (DeepMind tool style)
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color, marginRight: '0.4rem' }}>
+          <path d="M12 2c.1 3.8 3.1 6.9 7 7-3.9.1-6.9 3.2-7 7-.1-3.8-3.1-6.9-7-7 3.9-.1 6.9-3.2 7-7z" fill="currentColor" stroke="none" />
+          <path d="M19 14c.05 1.5 1.15 2.45 2.65 2.5-1.5.05-2.6 1-2.65 2.5-.05-1.5-1.15-2.45-2.65-2.5 1.5-.05 2.6-1 2.65-2.5z" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    default:
+      // Default layered package icon
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color, marginRight: '0.4rem' }}>
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+      );
+  }
+}
+
 export default function App() {
   const [tools, setTools] = useState<AITool[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -378,11 +421,7 @@ export default function App() {
           <div className="tool-group" key={tool.id}>
             <div className="tool-header">
               <h2 className="tool-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: activeCount > 0 ? 'var(--color-active)' : 'var(--color-exhausted)' }}>
-                  <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                  <polyline points="2 17 12 22 22 17"></polyline>
-                  <polyline points="2 12 12 17 22 12"></polyline>
-                </svg>
+                {getToolIcon(tool.id, activeCount)}
                 {tool.name}
                 <button
                   className="btn-icon-sm"
