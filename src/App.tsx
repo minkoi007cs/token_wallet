@@ -93,12 +93,25 @@ export default function App() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return parsed.map((t: AITool) => ({
+          ...t,
+          accounts: t.accounts.map(a => ({
+            ...a,
+            resetTime: a.resetTime || (Date.now() + 5 * 60 * 60 * 1000)
+          }))
+        }));
       } catch (e) {
         console.error('Failed to parse local storage', e);
       }
     }
-    return DEFAULT_DATA;
+    return DEFAULT_DATA.map(t => ({
+      ...t,
+      accounts: t.accounts.map(a => ({
+        ...a,
+        resetTime: Date.now() + 5 * 60 * 60 * 1000
+      }))
+    }));
   });
 
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
@@ -140,11 +153,17 @@ export default function App() {
       let updated = false;
       const nextTools = tools.map(tool => {
         const nextAccounts = tool.accounts.map(acc => {
-          if (acc.status === 'exhausted' && acc.resetTime && acc.resetTime <= now) {
+          if (acc.resetTime && acc.resetTime <= now) {
             updated = true;
+            let nextReset = acc.resetTime;
+            const fiveHours = 5 * 60 * 60 * 1000;
+            while (nextReset <= now) {
+              nextReset += fiveHours;
+            }
             return {
               ...acc,
               status: 'active' as const,
+              resetTime: nextReset,
               exhaustedType: undefined
             };
           }
@@ -284,7 +303,15 @@ export default function App() {
         const newId = `${toolId}-${Date.now()}`;
         return {
           ...t,
-          accounts: [...t.accounts, { id: newId, name: newAccountName.trim(), status: 'active' }]
+          accounts: [
+            ...t.accounts,
+            {
+              id: newId,
+              name: newAccountName.trim(),
+              status: 'active',
+              resetTime: Date.now() + 5 * 60 * 60 * 1000
+            }
+          ]
         };
       })
     );
