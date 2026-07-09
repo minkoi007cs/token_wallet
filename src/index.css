@@ -723,7 +723,7 @@ header h1 svg {
 .reset-bar-container {
   display: flex;
   align-items: center;
-  width: 90px;
+  width: 270px; /* 3x the original width of 90px */
   height: 4px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 2px;
@@ -752,8 +752,17 @@ header h1 svg {
 
 .reset-bar-fill {
   height: 100%;
-  background-color: #f97316; /* Amber/orange color */
+  position: absolute;
+  right: 0; /* Align color fills to the right */
   transition: width 0.3s ease;
+}
+
+.days-segment .reset-bar-fill {
+  background-color: #f97316; /* Keep orange for days */
+}
+
+.hours-segment .reset-bar-fill {
+  background-color: #facc15; /* Brighter yellow for hours */
 }
 
 .reset-bar-divider {
