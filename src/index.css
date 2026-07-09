@@ -221,9 +221,8 @@ header h1 svg {
   letter-spacing: 0.05em;
 }
 
-/* Tool Sections */
 .tool-group {
-  margin-bottom: 3rem;
+  margin-bottom: 1.5rem;
 }
 
 .tool-header {
@@ -251,65 +250,48 @@ header h1 svg {
 
 /* Accounts Grid */
 .accounts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 /* Account Card */
 .account-card {
   background: var(--bg-secondary);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 1.5rem;
+  border-left: 4px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1rem;
   cursor: pointer;
   position: relative;
   overflow: hidden;
   transition: var(--transition-smooth);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   justify-content: space-between;
-  min-height: 160px;
-}
-
-.account-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  transition: var(--transition-smooth);
 }
 
 .account-card.active {
-  background: linear-gradient(180deg, rgba(16, 185, 129, 0.03) 0%, rgba(17, 24, 39, 0.3) 100%);
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.02) 0%, rgba(17, 24, 39, 0.3) 100%);
   border-color: rgba(16, 185, 129, 0.15);
-}
-
-.account-card.active::before {
-  background-color: var(--color-active);
+  border-left-color: var(--color-active);
 }
 
 .account-card.active:hover {
   border-color: var(--color-active);
-  box-shadow: 0 4px 20px var(--color-active-glow);
-  transform: translateY(-2px);
+  box-shadow: 0 0 12px var(--color-active-glow);
 }
 
 .account-card.exhausted {
-  background: linear-gradient(180deg, rgba(180, 83, 9, 0.03) 0%, rgba(17, 24, 39, 0.3) 100%);
+  background: linear-gradient(90deg, rgba(180, 83, 9, 0.02) 0%, rgba(17, 24, 39, 0.3) 100%);
   border-color: rgba(180, 83, 9, 0.15);
-}
-
-.account-card.exhausted::before {
-  background-color: var(--color-exhausted);
+  border-left-color: var(--color-exhausted);
 }
 
 .account-card.exhausted:hover {
   border-color: var(--color-exhausted);
-  box-shadow: 0 4px 20px var(--color-exhausted-glow);
-  transform: translateY(-2px);
+  box-shadow: 0 0 12px var(--color-exhausted-glow);
 }
 
 .card-top {
@@ -639,27 +621,22 @@ header h1 svg {
 
 /* Add Card Styles */
 .account-card.add-card {
-  border: 2px dashed var(--color-border);
+  border: 1px dashed var(--color-border);
   background: transparent;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
-  min-height: 160px;
+  padding: 0.4rem 1rem;
   color: var(--text-muted);
   gap: 0.5rem;
-}
-
-.account-card.add-card::before {
-  display: none;
 }
 
 .account-card.add-card:hover {
   border-color: var(--color-accent);
   color: #ffffff;
   background: rgba(99, 102, 241, 0.03);
-  box-shadow: 0 4px 20px var(--color-accent-glow);
-  transform: translateY(-2px);
+  box-shadow: 0 0 10px var(--color-accent-glow);
 }
 
 .account-card.add-card svg {
@@ -706,4 +683,37 @@ header h1 svg {
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
 }
+
+/* Horizontal List Helpers */
+.account-info-side {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.account-status-side {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.account-timer-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+.countdown-timer {
+  font-family: monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+.reset-date-display {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
 

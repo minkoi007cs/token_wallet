@@ -440,30 +440,27 @@ export default function App() {
                       setActiveModal({ type: 'manage-account', toolId: tool.id, accountId: acc.id });
                     }}
                   >
-                    <div className="card-top">
+                    <div className="account-info-side">
+                      <span className={`status-indicator-dot ${isActive ? 'active' : 'exhausted'}`}></span>
                       <span className="account-name">{acc.name}</span>
+                    </div>
+
+                    <div className="account-status-side">
+                      {!isActive && (
+                        <div className="account-timer-block">
+                          <span className="countdown-timer">
+                            {acc.resetTime ? formatCountdown(acc.resetTime, currentTime) : '--m --s'}
+                          </span>
+                          {acc.resetTime && (
+                            <span className="reset-date-display">
+                              Resets {formatResetTime(acc.resetTime)}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <span className={`badge ${isActive ? 'active' : 'exhausted'}`}>
                         {isActive ? 'READY' : 'EXHAUSTED'}
                       </span>
-                    </div>
-
-                    <div className="card-bottom">
-                      {isActive ? (
-                        <div className="quota-status-text">
-                          Quota Available
-                        </div>
-                      ) : (
-                        <>
-                          <div className="countdown-timer">
-                            {acc.resetTime ? formatCountdown(acc.resetTime, currentTime) : '--m --s'}
-                          </div>
-                          {acc.resetTime && (
-                            <div className="reset-date-display">
-                              Resets {formatResetTime(acc.resetTime)}
-                            </div>
-                          )}
-                        </>
-                      )}
                     </div>
                   </div>
                 );
@@ -606,18 +603,47 @@ export default function App() {
         <div className="modal-overlay" onClick={() => setActiveModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Manage {selectedTool.name} - {selectedAccount.name}</h3>
-              <button className="modal-close" onClick={() => setActiveModal(null)}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
+              <h3>Manage Account ({selectedTool.name})</h3>
             </div>
 
             <div className="modal-body">
+              {/* RENAME & DELETE CONTROLS (MOVED TO TOP) */}
+              <div style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '1rem' }}>
+                <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Account Config</h4>
+                <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                  <label htmlFor="acc-rename-text">Rename Account</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      id="acc-rename-text"
+                      className="input-text"
+                      value={accountRenameText}
+                      onChange={e => setAccountRenameText(e.target.value)}
+                    />
+                    <button
+                      className="btn btn-primary"
+                      disabled={!accountRenameText.trim() || accountRenameText.trim() === selectedAccount.name}
+                      onClick={() => handleRenameAccount(activeModal.toolId, selectedAccount!.id)}
+                    >
+                      Rename
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  className="btn btn-danger"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={() => handleRemoveAccount(activeModal.toolId, selectedAccount!.id)}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  Delete Account
+                </button>
+              </div>
+
               {/* QUOTA CONTROLS */}
-              <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ padding: '1rem', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
                 <h4 style={{ fontSize: '0.9rem', color: '#ffffff', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quota Status</h4>
                 {selectedAccount.status === 'active' ? (
                   <div>
@@ -766,45 +792,6 @@ export default function App() {
                   </div>
                 )}
               </div>
-
-              {/* RENAME & DELETE CONTROLS */}
-              <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Account Config</h4>
-              <div className="form-group">
-                <label htmlFor="acc-rename-text">Rename Account</label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <input
-                    id="acc-rename-text"
-                    className="input-text"
-                    value={accountRenameText}
-                    onChange={e => setAccountRenameText(e.target.value)}
-                  />
-                  <button
-                    className="btn btn-primary"
-                    disabled={!accountRenameText.trim() || accountRenameText.trim() === selectedAccount.name}
-                    onClick={() => handleRenameAccount(activeModal.toolId, selectedAccount!.id)}
-                  >
-                    Rename
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1rem', marginTop: '1rem' }}>
-                <button
-                  className="btn btn-danger"
-                  style={{ width: '100%', justifyContent: 'center' }}
-                  onClick={() => handleRemoveAccount(activeModal.toolId, selectedAccount!.id)}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                  </svg>
-                  Delete Account
-                </button>
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button className="btn btn-primary" onClick={() => setActiveModal(null)}>Done</button>
             </div>
           </div>
         </div>
