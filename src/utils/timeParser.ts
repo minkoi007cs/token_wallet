@@ -51,7 +51,7 @@ export function parseResetTime(input: string): number | null {
   let parsedAny = false;
 
   // Pattern to find numbers and their associated text units
-  const relativeRegex = /(\d+(?:\.\d+)?)\s*(d|day|days|w|week|weeks|h|hour|hours|m|min|mins|minute|minutes|s|sec|secs|second|seconds)\b/g;
+  const relativeRegex = /(\d+(?:\.\d+)?)\s*(d|day|days|w|week|weeks|h|hr|hrs|hour|hours|m|min|mins|minute|minutes|s|sec|secs|second|seconds)\b/g;
   let match;
   
   while ((match = relativeRegex.exec(cleanInput)) !== null) {
