@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { parseResetTime, formatResetTime, formatVerboseCountdown, formatVerboseResetTime, getRemainingDurationString } from './utils/timeParser';
+import { supabase } from './utils/supabaseClient';
 import AppWallet from './AppWallet';
 
 // --- DATA STRUCTURES ---
@@ -12,6 +13,7 @@ export interface Account {
   dueDate?: number;     // Payment due date timestamp
   dueAmount?: number;   // Payment amount
   dueNote?: string;     // Payment note
+  noDue?: boolean;      // When true: hides payment info
   disabled?: boolean;   // When true: grayed out, no countdown
   loginHint?: string;   // login info hint for user
 }
@@ -50,8 +52,6 @@ export interface AppProject {
   priority: 'High' | 'Medium' | 'Low' | string;
   lastUpdated: number;
 }
-
-const STORAGE_KEY = 'token_wallet_data';
 
 const DEFAULT_DATA: AITool[] = [
   {
@@ -194,30 +194,75 @@ function parseAmountInput(input: string): number | undefined {
 }
 
 export default function App() {
-  const [tools, setTools] = useState<AITool[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.map((t: AITool) => ({
-          ...t,
-          accounts: t.accounts.map(a => ({
-            ...a,
-            resetTime: a.resetTime || (Date.now() + 5 * 60 * 60 * 1000)
-          }))
+  const [tools, setTools] = useState<AITool[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    const fetchTools = async () => {
+      const { data: toolsData, error: toolsError } = await supabase.from('tkw_ai_tools').select('*');
+      const { data: accountsData, error: accountsError } = await supabase.from('tkw_ai_accounts').select('*');
+      
+      if (!toolsError && !accountsError && toolsData && accountsData) {
+        const loadedTools: AITool[] = toolsData.map(t => ({
+          id: t.id,
+          name: t.name,
+          accounts: accountsData
+            .filter(a => a.tool_id === t.id)
+            .map(a => ({
+              id: a.id,
+              name: a.name,
+              status: a.status as 'active' | 'exhausted',
+              exhaustedType: a.exhausted_type || undefined,
+              resetTime: a.reset_time ? Number(a.reset_time) : undefined,
+              dueDate: a.due_date ? Number(a.due_date) : undefined,
+              dueAmount: a.due_amount ? Number(a.due_amount) : undefined,
+              dueNote: a.due_note || undefined,
+              noDue: !!a.no_due,
+              disabled: !!a.disabled,
+              loginHint: a.login_hint || undefined
+            }))
         }));
-      } catch (e) {
-        console.error('Failed to parse local storage', e);
+        
+        if (loadedTools.length > 0) {
+          setTools(loadedTools);
+        } else {
+          // If Supabase is empty, attempt to migrate from local storage
+          const saved = localStorage.getItem('ai_token_manager_tools');
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              setTools(parsed.map((t: AITool) => ({
+                ...t,
+                accounts: t.accounts.map(a => ({
+                  ...a,
+                  resetTime: a.resetTime || (Date.now() + 5 * 60 * 60 * 1000)
+                }))
+              })));
+            } catch (e) {
+              console.error('Failed to parse local storage for migration', e);
+              setTools(DEFAULT_DATA);
+            }
+          } else {
+            setTools(DEFAULT_DATA);
+          }
+        }
+      } else {
+        const saved = localStorage.getItem('ai_token_manager_tools');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            setTools(parsed);
+          } catch(e) {
+             setTools(DEFAULT_DATA);
+          }
+        } else {
+           setTools(DEFAULT_DATA);
+        }
       }
-    }
-    return DEFAULT_DATA.map(t => ({
-      ...t,
-      accounts: t.accounts.map(a => ({
-        ...a,
-        resetTime: Date.now() + 5 * 60 * 60 * 1000
-      }))
-    }));
-  });
+      setIsLoaded(true);
+    };
+    fetchTools();
+  }, []);
 
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
   const [activeTab, setActiveTab] = useState<'token' | 'app'>('token');
@@ -268,10 +313,53 @@ export default function App() {
     }
   }, [activeModal]);
 
-  // Keep local storage in sync
+  // Sync to Supabase
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tools));
-  }, [tools]);
+    if (!isLoaded) return;
+    const syncToSupabase = async () => {
+      // 1. Upsert tools
+      if (tools.length > 0) {
+        const toolsData = tools.map(t => ({ id: t.id, name: t.name }));
+        await supabase.from('tkw_ai_tools').upsert(toolsData);
+      }
+
+      // 2. Upsert accounts
+      const accountsData = tools.flatMap(t => t.accounts.map(a => ({
+        id: a.id,
+        tool_id: t.id,
+        name: a.name,
+        status: a.status,
+        exhausted_type: a.exhaustedType || null,
+        reset_time: a.resetTime || null,
+        due_date: a.dueDate || null,
+        due_amount: a.dueAmount || null,
+        due_note: a.dueNote || null,
+        no_due: !!a.noDue,
+        disabled: !!a.disabled,
+        login_hint: a.loginHint || null
+      })));
+      if (accountsData.length > 0) {
+        await supabase.from('tkw_ai_accounts').upsert(accountsData);
+      }
+
+      // 3. Cleanup deleted accounts
+      const accountIds = tools.flatMap(t => t.accounts.map(a => a.id));
+      if (accountIds.length > 0) {
+        await supabase.from('tkw_ai_accounts').delete().not('id', 'in', `(${accountIds.map(id => `"${id}"`).join(',')})`);
+      } else {
+        await supabase.from('tkw_ai_accounts').delete().neq('id', 'non_existent');
+      }
+
+      // 4. Cleanup deleted tools
+      const toolIds = tools.map(t => t.id);
+      if (toolIds.length > 0) {
+        await supabase.from('tkw_ai_tools').delete().not('id', 'in', `(${toolIds.map(id => `"${id}"`).join(',')})`);
+      } else {
+        await supabase.from('tkw_ai_tools').delete().neq('id', 'non_existent');
+      }
+    };
+    syncToSupabase();
+  }, [tools, isLoaded]);
 
   // Background interval: updates countdowns and auto-restores active status
   useEffect(() => {
@@ -707,7 +795,7 @@ export default function App() {
                         setDueDateInput(acc.dueDate ? formatDueDateInput(acc.dueDate) : '');
                         setDueAmountInput(acc.dueAmount != null ? formatAmountInput(acc.dueAmount) : '');
                         setDueNoteInput(acc.dueNote || '');
-                        setNoDue(!acc.dueDate);
+                        setNoDue(acc.noDue ?? !acc.dueDate);
                         if (!isDisabled && acc.resetTime && acc.resetTime > Date.now()) {
                           setCustomResetInput(getRemainingDurationString(acc.resetTime));
                         } else {
@@ -724,7 +812,7 @@ export default function App() {
                             - Resets {formatResetTime(acc.resetTime)}
                           </span>
                         )}
-                        {acc.dueDate && (
+                        {acc.dueDate && !acc.noDue && (
                           <span className={`due-badge ${dueBadgeClass}`}>
                             {formatDueDateDisplay(acc.dueDate)}{acc.dueAmount != null ? ` · ₫${formatAmountInput(acc.dueAmount)}` : ''}{acc.dueNote ? ` · ${acc.dueNote}` : ''}
                           </span>
@@ -990,18 +1078,14 @@ export default function App() {
                       checked={noDue}
                       onChange={e => {
                         setNoDue(e.target.checked);
-                        if (e.target.checked) {
-                          setTools(prev => prev.map(t => t.id !== activeModal.toolId ? t : {
-                              ...t,
-                              accounts: t.accounts.map(a => a.id !== selectedAccount!.id ? a : {
-                                ...a, dueDate: undefined, dueAmount: undefined, dueNote: undefined
-                              })
-                            }));
-                            setDueDateInput('');
-                            setDueAmountInput('');
-                            setDueNoteInput('');
-                            setActiveModal(null);
-                        }
+                        // Just save the noDue flag without erasing data
+                        setTools(prev => prev.map(t => t.id !== activeModal.toolId ? t : {
+                          ...t,
+                          accounts: t.accounts.map(a => a.id !== selectedAccount!.id ? a : {
+                            ...a, noDue: e.target.checked
+                          })
+                        }));
+                        setActiveModal(null);
                       }}
                     />
                     No due
@@ -1048,7 +1132,8 @@ export default function App() {
                               ...a,
                               dueDate: parsed ?? undefined,
                               dueAmount: amount,
-                              dueNote: dueNoteInput.trim() || undefined
+                              dueNote: dueNoteInput.trim() || undefined,
+                              noDue: false
                             })
                           }));
                           setActiveModal(null);
