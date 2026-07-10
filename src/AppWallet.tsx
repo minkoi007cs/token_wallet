@@ -249,6 +249,42 @@ const INITIAL_APP_DATA: AppProject[] = [
     status: 'Development',
     priority: 'Medium',
     lastUpdated: Date.now()
+  },
+  {
+    id: 'app-supabase-canvas',
+    name: 'Canvas',
+    developer: 'Hoa Hoang',
+    github: '',
+    frontendUrl: 'https://supabase.com/dashboard/project/xzmqeibqvgrthuisghvu',
+    backendUrl: '',
+    hosting: '',
+    database: 'Supabase',
+    type: 'Web App',
+    description: 'Canvas project on Supabase',
+    techStack: 'Supabase',
+    techNotes: '',
+    backlog: [],
+    status: 'Development',
+    priority: 'Medium',
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'app-supabase-houserenting',
+    name: 'house_renting',
+    developer: 'Hoa Hoang',
+    github: '',
+    frontendUrl: 'https://supabase.com/dashboard/project/lnuijfoohwvunatwuqjx',
+    backendUrl: '',
+    hosting: '',
+    database: 'Supabase',
+    type: 'Web App',
+    description: 'House Renting project on Supabase',
+    techStack: 'Supabase',
+    techNotes: '',
+    backlog: [],
+    status: 'Development',
+    priority: 'Medium',
+    lastUpdated: Date.now()
   }
 ];
 

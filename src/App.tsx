@@ -1000,6 +1000,7 @@ export default function App() {
                             setDueDateInput('');
                             setDueAmountInput('');
                             setDueNoteInput('');
+                            setActiveModal(null);
                         }
                       }}
                     />
@@ -1050,6 +1051,7 @@ export default function App() {
                               dueNote: dueNoteInput.trim() || undefined
                             })
                           }));
+                          setActiveModal(null);
                         }}
                       >
                         Save
