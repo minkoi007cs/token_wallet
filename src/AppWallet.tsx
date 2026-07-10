@@ -16,7 +16,8 @@ export interface AppProject {
   name: string;
   developer: string;
   github: string;
-  url: string;
+  frontendUrl: string;
+  backendUrl: string;
   hosting: string;
   database: string;
   type: string;
@@ -38,7 +39,8 @@ const INITIAL_APP_DATA: AppProject[] = [
     name: 'Token Wallet',
     developer: 'Hoa Hoang',
     github: 'https://github.com/johnnyhoang/TokenWallet',
-    url: 'https://token-wallet-chi.vercel.app',
+    frontendUrl: 'https://token-wallet-chi.vercel.app',
+    backendUrl: '',
     hosting: 'Vercel',
     database: 'LocalStorage',
     type: 'Web App',
@@ -55,7 +57,8 @@ const INITIAL_APP_DATA: AppProject[] = [
     name: 'AdmissionDecisionEngine',
     developer: 'Hoa Hoang',
     github: 'https://github.com/johnnyhoang/AdmissionDecisionEngine',
-    url: 'https://ade-backend.vercel.app',
+    frontendUrl: '',
+    backendUrl: 'https://ade-backend.vercel.app',
     hosting: 'Vercel',
     database: '',
     type: 'Web App',
@@ -72,7 +75,8 @@ const INITIAL_APP_DATA: AppProject[] = [
     name: 'coffee_shop_24hxh',
     developer: 'Hoa Hoang',
     github: 'https://github.com/johnnyhoang/coffee_shop_24hxh',
-    url: 'https://coffee24hxh-api.vercel.app',
+    frontendUrl: '',
+    backendUrl: 'https://coffee24hxh-api.vercel.app',
     hosting: 'Vercel',
     database: '',
     type: 'Web App',
@@ -89,7 +93,8 @@ const INITIAL_APP_DATA: AppProject[] = [
     name: 'dev-brain',
     developer: 'Hoa Hoang',
     github: 'https://github.com/johnnyhoang/dev-brain',
-    url: '',
+    frontendUrl: '',
+    backendUrl: '',
     hosting: '',
     database: '',
     type: 'Other',
@@ -106,7 +111,8 @@ const INITIAL_APP_DATA: AppProject[] = [
     name: 'family-management',
     developer: 'Hoa Hoang',
     github: 'https://github.com/johnnyhoang/family-management',
-    url: 'https://family-management-eight.vercel.app',
+    frontendUrl: 'https://family-management-eight.vercel.app',
+    backendUrl: '',
     hosting: 'Vercel',
     database: '',
     type: 'Web App',
@@ -123,7 +129,8 @@ const INITIAL_APP_DATA: AppProject[] = [
     name: 'gameEngG10',
     developer: 'Hoa Hoang',
     github: 'https://github.com/johnnyhoang/gameEngG10',
-    url: 'https://game-eng-g10-backend.vercel.app',
+    frontendUrl: '',
+    backendUrl: 'https://game-eng-g10-backend.vercel.app',
     hosting: 'Vercel',
     database: '',
     type: 'Web App',
@@ -140,7 +147,8 @@ const INITIAL_APP_DATA: AppProject[] = [
     name: 'photo-clear-1',
     developer: 'Hoa Hoang',
     github: 'https://github.com/johnnyhoang/photo-clear-1',
-    url: '',
+    frontendUrl: '',
+    backendUrl: '',
     hosting: '',
     database: '',
     type: 'Other',
@@ -157,7 +165,8 @@ const INITIAL_APP_DATA: AppProject[] = [
     name: 'qlhs_dtnt',
     developer: 'Hoa Hoang',
     github: 'https://github.com/johnnyhoang/qlhs_dtnt',
-    url: 'https://qlhs-dtnt.vercel.app',
+    frontendUrl: 'https://qlhs-dtnt.vercel.app',
+    backendUrl: '',
     hosting: 'Vercel',
     database: '',
     type: 'Web App',
@@ -178,14 +187,18 @@ export default function AppWallet() {
       try {
         const parsed = JSON.parse(saved);
         if (parsed.length > 0) {
+          // Migrate legacy single `url` field into `frontendUrl` for existing users
+          const migrated = parsed.map((p: AppProject & { url?: string }) =>
+            p.frontendUrl === undefined ? { ...p, frontendUrl: p.url || '', backendUrl: p.backendUrl || '' } : p
+          );
           // Merge any missing initial apps by name to auto-populate existing users
-          const missingApps = INITIAL_APP_DATA.filter(initApp => 
-            !parsed.some((p: AppProject) => p.name === initApp.name)
+          const missingApps = INITIAL_APP_DATA.filter(initApp =>
+            !migrated.some((p: AppProject) => p.name === initApp.name)
           );
           if (missingApps.length > 0) {
-            return [...parsed, ...missingApps];
+            return [...migrated, ...missingApps];
           }
-          return parsed;
+          return migrated;
         }
       } catch (e) {
         console.error('Failed to parse app wallet local storage', e);
@@ -219,7 +232,7 @@ export default function AppWallet() {
       setActiveModal({ type: 'edit-app', app });
     } else {
       setFormData({
-        name: '', developer: '', github: '', url: '', hosting: 'Vercel',
+        name: '', developer: '', github: '', frontendUrl: '', backendUrl: '', hosting: 'Vercel',
         database: '', type: 'Web App', description: '', techStack: '',
         techNotes: '', status: 'Development', priority: 'Medium'
       });
@@ -235,7 +248,8 @@ export default function AppWallet() {
       name: formData.name || '',
       developer: formData.developer || '',
       github: formData.github || '',
-      url: formData.url || '',
+      frontendUrl: formData.frontendUrl || '',
+      backendUrl: formData.backendUrl || '',
       hosting: formData.hosting || '',
       database: formData.database || '',
       type: formData.type || '',
@@ -334,10 +348,10 @@ export default function AppWallet() {
           <div key={app.id} className={`tool-card ${app.isDisabled ? 'disabled' : ''}`} style={{ position: 'relative', opacity: app.isDisabled ? 0.6 : 1, transition: 'all 0.2s' }}>
             <div className="tool-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ flex: 1 }}>
-                <h2 
-                  onClick={() => app.url ? window.open(app.url, '_blank') : null} 
-                  style={{ cursor: app.url ? 'pointer' : 'default', textDecoration: app.url ? 'underline' : 'none' }}
-                  title={app.url ? `Open ${app.url}` : ''}
+                <h2
+                  onClick={() => app.frontendUrl ? window.open(app.frontendUrl, '_blank') : null}
+                  style={{ cursor: app.frontendUrl ? 'pointer' : 'default', textDecoration: app.frontendUrl ? 'underline' : 'none' }}
+                  title={app.frontendUrl ? `Open ${app.frontendUrl}` : ''}
                 >
                   {app.name}
                 </h2>
@@ -385,7 +399,10 @@ export default function AppWallet() {
             </div>
             <div className="accounts-list" style={{ marginTop: '1rem' }}>
               <div style={{ marginBottom: '0.5rem' }}>
-                <strong>URL:</strong> <a href={app.url} target="_blank" rel="noreferrer" style={{ color: 'var(--color-active)', fontWeight: 'bold' }} onClick={e => e.stopPropagation()}>{app.url || 'N/A'}</a>
+                <strong>Frontend:</strong> <a href={app.frontendUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--color-active)', fontWeight: 'bold' }} onClick={e => e.stopPropagation()}>{app.frontendUrl || 'N/A'}</a>
+              </div>
+              <div style={{ marginBottom: '0.5rem' }}>
+                <strong>Backend:</strong> <a href={app.backendUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--color-active)', fontWeight: 'bold' }} onClick={e => e.stopPropagation()}>{app.backendUrl || 'N/A'}</a>
               </div>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}><strong>Type:</strong> {app.type} | <strong>Host:</strong> {app.hosting}</p>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}><strong>Stack:</strong> {app.techStack}</p>
@@ -426,8 +443,12 @@ export default function AppWallet() {
                     <input className="input-text" type="text" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="My Awesome App" />
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>URL</label>
-                    <input className="input-text" type="text" value={formData.url || ''} onChange={e => setFormData({...formData, url: e.target.value})} placeholder="https://..." />
+                    <label>Frontend URL</label>
+                    <input className="input-text" type="text" value={formData.frontendUrl || ''} onChange={e => setFormData({...formData, frontendUrl: e.target.value})} placeholder="https://..." />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Backend URL</label>
+                    <input className="input-text" type="text" value={formData.backendUrl || ''} onChange={e => setFormData({...formData, backendUrl: e.target.value})} placeholder="https://..." />
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label>Developer / Assignee</label>
