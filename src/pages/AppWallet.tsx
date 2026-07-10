@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from './utils/supabaseClient';
+import { supabase } from '../utils/supabaseClient';
 
 export interface BacklogItem {
   id: string;
@@ -332,31 +332,6 @@ export default function AppWallet() {
             }))
         }));
 
-        const hasMigratedApps = localStorage.getItem('has_migrated_apps_to_supabase_v2');
-        if (!hasMigratedApps) {
-          const saved = localStorage.getItem('app_wallet_data');
-          if (saved) {
-            try {
-              const parsed = JSON.parse(saved);
-              if (parsed.length > 0) {
-                const migrated = parsed.map((p: AppProject & { url?: string }) =>
-                  p.frontendUrl === undefined ? { ...p, frontendUrl: p.url || '', backendUrl: p.backendUrl || '' } : p
-                );
-                const missingApps = INITIAL_APP_DATA.filter(initApp =>
-                  !migrated.some((p: AppProject) => p.name === initApp.name)
-                );
-                setApps([...migrated, ...missingApps]);
-                localStorage.setItem('has_migrated_apps_to_supabase_v2', 'true');
-                setIsLoaded(true);
-                return;
-              }
-            } catch (e) {
-              console.error('Failed to parse app wallet local storage for migration', e);
-            }
-          }
-          localStorage.setItem('has_migrated_apps_to_supabase_v2', 'true');
-        }
-
         if (loadedApps.length > 0) {
           const missingApps = INITIAL_APP_DATA.filter(initApp =>
             !loadedApps.some((p: AppProject) => p.name === initApp.name)
@@ -366,24 +341,7 @@ export default function AppWallet() {
           setApps(INITIAL_APP_DATA);
         }
       } else {
-        const saved = localStorage.getItem('app_wallet_data');
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (parsed.length > 0) {
-                const migrated = parsed.map((p: AppProject & { url?: string }) =>
-                  p.frontendUrl === undefined ? { ...p, frontendUrl: p.url || '', backendUrl: p.backendUrl || '' } : p
-                );
-                setApps(migrated);
-            } else {
-              setApps(INITIAL_APP_DATA);
-            }
-          } catch(e) {
-            setApps(INITIAL_APP_DATA);
-          }
-        } else {
-          setApps(INITIAL_APP_DATA);
-        }
+         setApps(INITIAL_APP_DATA);
       }
       setIsLoaded(true);
     };
