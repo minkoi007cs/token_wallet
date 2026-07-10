@@ -196,12 +196,19 @@ function parseAmountInput(input: string): number | undefined {
 export default function App() {
   const [tools, setTools] = useState<AITool[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isSupabasePaused, setIsSupabasePaused] = useState(false);
 
   useEffect(() => {
     const fetchTools = async () => {
       const { data: toolsData, error: toolsError } = await supabase.from('tkw_ai_tools').select('*');
       const { data: accountsData, error: accountsError } = await supabase.from('tkw_ai_accounts').select('*');
       
+      if (toolsError || accountsError) {
+        setIsSupabasePaused(true);
+      } else {
+        setIsSupabasePaused(false);
+      }
+
       if (!toolsError && !accountsError && toolsData && accountsData) {
         const loadedTools: AITool[] = toolsData.map(t => ({
           id: t.id,
@@ -223,11 +230,9 @@ export default function App() {
             }))
         }));
         
-        if (loadedTools.length > 0) {
-          setTools(loadedTools);
-        } else {
-          // If Supabase is empty, attempt to migrate from local storage
-          const saved = localStorage.getItem('ai_token_manager_tools');
+        const hasMigrated = localStorage.getItem('has_migrated_to_supabase_v2');
+        if (!hasMigrated) {
+          const saved = localStorage.getItem('token_wallet_data');
           if (saved) {
             try {
               const parsed = JSON.parse(saved);
@@ -238,16 +243,23 @@ export default function App() {
                   resetTime: a.resetTime || (Date.now() + 5 * 60 * 60 * 1000)
                 }))
               })));
+              localStorage.setItem('has_migrated_to_supabase_v2', 'true');
+              setIsLoaded(true);
+              return;
             } catch (e) {
-              console.error('Failed to parse local storage for migration', e);
-              setTools(DEFAULT_DATA);
+              console.error('Failed to parse local storage', e);
             }
-          } else {
-            setTools(DEFAULT_DATA);
           }
+          localStorage.setItem('has_migrated_to_supabase_v2', 'true'); // mark as done even if empty
+        }
+
+        if (loadedTools.length > 0) {
+          setTools(loadedTools);
+        } else {
+          setTools(DEFAULT_DATA);
         }
       } else {
-        const saved = localStorage.getItem('ai_token_manager_tools');
+        const saved = localStorage.getItem('token_wallet_data');
         if (saved) {
           try {
             const parsed = JSON.parse(saved);
@@ -625,6 +637,27 @@ export default function App() {
     }
   };
 
+  const handleForceRecoverLocalStorage = () => {
+    const saved = localStorage.getItem('token_wallet_data');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setTools(parsed.map((t: AITool) => ({
+          ...t,
+          accounts: t.accounts.map(a => ({
+            ...a,
+            resetTime: a.resetTime || (Date.now() + 5 * 60 * 60 * 1000)
+          }))
+        })));
+        alert('Recovered successfully! Data is now syncing to Supabase.');
+      } catch (e) {
+        alert('Error parsing local storage data.');
+      }
+    } else {
+      alert('No data found in local storage under key "token_wallet_data"');
+    }
+  };
+
   return (
     <div className="app-wrapper">
       {/* HEADER */}
@@ -665,6 +698,24 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {/* SUPABASE PAUSED WARNING BANNER */}
+      {isSupabasePaused && (
+        <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: 'var(--radius-md)', padding: '1rem 1.5rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <span style={{ color: '#ef4444' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </span>
+            <div>
+              <h3 style={{ margin: '0 0 0.25rem 0', color: '#ef4444' }}>Database is unavailable or paused</h3>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>Free Supabase projects pause after 1 week of inactivity. Your data will be saved locally until it's restored.</p>
+            </div>
+          </div>
+          <a href="https://supabase.com/dashboard/projects" target="_blank" rel="noreferrer" className="btn" style={{ background: '#ef4444', color: '#fff', border: 'none', fontWeight: 'bold' }}>
+            Go to Supabase to Restart
+          </a>
+        </div>
+      )}
 
       {/* RENDER APP WALLET TAB */}
       {activeTab === 'app' && <AppWallet />}
@@ -1218,21 +1269,50 @@ export default function App() {
 
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                   <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleRestoreBackup}>
-                    Import/Restore
+                    Import
                   </button>
-                  <button
-                    className="btn btn-danger"
-                    style={{ flex: 1 }}
-                    onClick={() => {
-                      if (confirm('Reset all to default?')) {
-                        setTools(DEFAULT_DATA);
-                        setBackupText(JSON.stringify(DEFAULT_DATA, null, 2));
-                      }
-                    }}
-                  >
-                    Reset Defaults
+                  <button className="btn" style={{ flex: 1 }} onClick={() => {
+                    navigator.clipboard.writeText(backupText);
+                    alert('Copied to clipboard!');
+                  }}>
+                    Copy
                   </button>
                 </div>
+              </div>
+
+              <div className="backup-section" style={{ marginTop: '1.5rem', borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                  Emergency Recovery: If your data was overwritten by empty Supabase data, you can forcefully recover it from your browser's Local Storage here.
+                </p>
+                <button 
+                  className="btn" 
+                  style={{ width: '100%', borderColor: '#f59e0b', color: '#f59e0b', justifyContent: 'center' }}
+                  onClick={handleForceRecoverLocalStorage}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.59-9.21l5.67-5.67"/>
+                  </svg>
+                  Force Recover from Browser Storage
+                </button>
+              </div>
+
+              <div style={{ marginTop: '2rem' }}>
+                <button
+                  className="btn"
+                  style={{ width: '100%', borderColor: '#ef4444', color: '#ef4444', justifyContent: 'center' }}
+                  onClick={() => {
+                    if (confirm('Are you absolutely sure you want to factory reset? All local data will be wiped.')) {
+                      setTools(DEFAULT_DATA);
+                      setActiveModal(null);
+                    }
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 6h18"></path>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  Factory Reset (Load Defaults)
+                </button>
               </div>
             </div>
 

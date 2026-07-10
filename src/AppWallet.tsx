@@ -332,13 +332,8 @@ export default function AppWallet() {
             }))
         }));
 
-        if (loadedApps.length > 0) {
-          const missingApps = INITIAL_APP_DATA.filter(initApp =>
-            !loadedApps.some((p: AppProject) => p.name === initApp.name)
-          );
-          setApps([...loadedApps, ...missingApps]);
-        } else {
-          // If Supabase is empty, attempt to migrate from local storage
+        const hasMigratedApps = localStorage.getItem('has_migrated_apps_to_supabase_v2');
+        if (!hasMigratedApps) {
           const saved = localStorage.getItem('app_wallet_data');
           if (saved) {
             try {
@@ -351,15 +346,24 @@ export default function AppWallet() {
                   !migrated.some((p: AppProject) => p.name === initApp.name)
                 );
                 setApps([...migrated, ...missingApps]);
-              } else {
-                setApps(INITIAL_APP_DATA);
+                localStorage.setItem('has_migrated_apps_to_supabase_v2', 'true');
+                setIsLoaded(true);
+                return;
               }
             } catch (e) {
-              setApps(INITIAL_APP_DATA);
+              console.error('Failed to parse app wallet local storage for migration', e);
             }
-          } else {
-            setApps(INITIAL_APP_DATA);
           }
+          localStorage.setItem('has_migrated_apps_to_supabase_v2', 'true');
+        }
+
+        if (loadedApps.length > 0) {
+          const missingApps = INITIAL_APP_DATA.filter(initApp =>
+            !loadedApps.some((p: AppProject) => p.name === initApp.name)
+          );
+          setApps([...loadedApps, ...missingApps]);
+        } else {
+          setApps(INITIAL_APP_DATA);
         }
       } else {
         const saved = localStorage.getItem('app_wallet_data');
