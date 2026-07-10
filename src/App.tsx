@@ -659,10 +659,14 @@ export default function App() {
             </div>
 
             <div className="accounts-grid">
-              {[...tool.accounts]
+                {[...tool.accounts]
                 .sort((a, b) => {
                   if (a.disabled && !b.disabled) return 1;
                   if (!a.disabled && b.disabled) return -1;
+                  
+                  if (a.status === 'active' && b.status !== 'active') return -1;
+                  if (a.status !== 'active' && b.status === 'active') return 1;
+
                   return (a.resetTime || 0) - (b.resetTime || 0);
                 })
                 .map(acc => {
