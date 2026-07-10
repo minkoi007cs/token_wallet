@@ -11,6 +11,7 @@ export interface Account {
   resetTime?: number;   // Epoch timestamp in ms
   dueDate?: number;     // Payment due date timestamp
   dueAmount?: number;   // Payment amount
+  dueNote?: string;     // Payment note
   disabled?: boolean;   // When true: grayed out, no countdown
   loginHint?: string;   // login info hint for user
 }
@@ -161,23 +162,35 @@ function formatDueDateDisplay(ts: number): string {
   return `${dd}-${mmm}-${yyyy}`;
 }
 
-/** Format a timestamp as dd-mmm-yyyy for the input textbox */
+/** Format a timestamp as yyyy-mm-dd for the input date */
 function formatDueDateInput(ts: number): string {
-  return formatDueDateDisplay(ts);
+  const d = new Date(ts);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${yyyy}-${mm}-${dd}`;
 }
 
-/** Parse dd-mmm-yyyy or similar into a timestamp. Returns null if invalid. */
+/** Parse yyyy-mm-dd into a timestamp. Returns null if invalid. */
 function parseDueDateInput(input: string): number | null {
-  if (!input.trim()) return null;
-  // Try dd-mmm-yyyy or dd/mmm/yyyy or dd mmm yyyy
-  const m = input.trim().match(/^(\d{1,2})[-\/\s]([a-zA-Z]+)[-\/\s](\d{4})$/);
-  if (!m) return null;
-  const day = parseInt(m[1], 10);
-  const monthIdx = MONTH_NAMES.findIndex(mn => mn.toLowerCase() === m[2].toLowerCase().slice(0, 3));
-  const year = parseInt(m[3], 10);
-  if (monthIdx === -1 || day < 1 || day > 31) return null;
-  const d = new Date(year, monthIdx, day, 0, 0, 0, 0);
+  if (!input) return null;
+  const d = new Date(input);
   return isNaN(d.getTime()) ? null : d.getTime();
+}
+
+/** Format amount with thousands separator */
+function formatAmountInput(value: string | number | undefined): string {
+  if (value === undefined || value === null || value === '') return '';
+  const numericString = String(value).replace(/\D/g, '');
+  if (!numericString) return '';
+  return new Intl.NumberFormat('vi-VN').format(parseInt(numericString, 10));
+}
+
+/** Parse amount from formatted string */
+function parseAmountInput(input: string): number | undefined {
+  const numericString = input.replace(/\D/g, '');
+  if (!numericString) return undefined;
+  return parseInt(numericString, 10);
 }
 
 export default function App() {
@@ -225,6 +238,7 @@ export default function App() {
   // Due date / amount inputs in modal
   const [dueDateInput, setDueDateInput] = useState('');
   const [dueAmountInput, setDueAmountInput] = useState('');
+  const [dueNoteInput, setDueNoteInput] = useState('');
   const [noDue, setNoDue] = useState(false);
 
   // New item text states
@@ -249,6 +263,7 @@ export default function App() {
       setLoginHintInput('');
       setDueDateInput('');
       setDueAmountInput('');
+      setDueNoteInput('');
       setNoDue(false);
     }
   }, [activeModal]);
@@ -690,7 +705,8 @@ export default function App() {
                         setAccountRenameText(acc.name);
                         setLoginHintInput(acc.loginHint || '');
                         setDueDateInput(acc.dueDate ? formatDueDateInput(acc.dueDate) : '');
-                        setDueAmountInput(acc.dueAmount != null ? String(acc.dueAmount) : '');
+                        setDueAmountInput(acc.dueAmount != null ? formatAmountInput(acc.dueAmount) : '');
+                        setDueNoteInput(acc.dueNote || '');
                         setNoDue(!acc.dueDate);
                         if (!isDisabled && acc.resetTime && acc.resetTime > Date.now()) {
                           setCustomResetInput(getRemainingDurationString(acc.resetTime));
@@ -710,7 +726,7 @@ export default function App() {
                         )}
                         {acc.dueDate && (
                           <span className={`due-badge ${dueBadgeClass}`}>
-                            {formatDueDateDisplay(acc.dueDate)}{acc.dueAmount != null ? ` · ₫${acc.dueAmount.toLocaleString('vi-VN')}` : ''}
+                            {formatDueDateDisplay(acc.dueDate)}{acc.dueAmount != null ? ` · ₫${formatAmountInput(acc.dueAmount)}` : ''}{acc.dueNote ? ` · ${acc.dueNote}` : ''}
                           </span>
                         )}
                       </div>
@@ -975,15 +991,15 @@ export default function App() {
                       onChange={e => {
                         setNoDue(e.target.checked);
                         if (e.target.checked) {
-                          // Immediately clear due date from account
                           setTools(prev => prev.map(t => t.id !== activeModal.toolId ? t : {
-                            ...t,
-                            accounts: t.accounts.map(a => a.id !== selectedAccount!.id ? a : {
-                              ...a, dueDate: undefined, dueAmount: undefined
-                            })
-                          }));
-                          setDueDateInput('');
-                          setDueAmountInput('');
+                              ...t,
+                              accounts: t.accounts.map(a => a.id !== selectedAccount!.id ? a : {
+                                ...a, dueDate: undefined, dueAmount: undefined, dueNote: undefined
+                              })
+                            }));
+                            setDueDateInput('');
+                            setDueAmountInput('');
+                            setDueNoteInput('');
                         }
                       }}
                     />
@@ -991,43 +1007,54 @@ export default function App() {
                   </label>
                 </div>
                 {!noDue && (
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input
-                      className="input-text"
-                      placeholder="dd-mmm-yyyy (e.g. 15-Aug-2026)"
-                      value={dueDateInput}
-                      onChange={e => setDueDateInput(e.target.value)}
-                      style={{ flex: 2 }}
-                    />
-                    <div style={{ position: 'relative', flex: 1 }}>
-                      <span style={{ position: 'absolute', left: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.85rem', pointerEvents: 'none' }}>₫</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <input
                         className="input-text"
-                        placeholder="Amount"
-                        type="number"
-                        min="0"
-                        value={dueAmountInput}
-                        onChange={e => setDueAmountInput(e.target.value)}
-                        style={{ width: '100%', paddingLeft: '1.4rem' }}
+                        type="date"
+                        value={dueDateInput}
+                        onChange={e => setDueDateInput(e.target.value)}
+                        style={{ flex: 1 }}
                       />
+                      <div style={{ position: 'relative', flex: 1 }}>
+                        <span style={{ position: 'absolute', left: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.85rem', pointerEvents: 'none' }}>₫</span>
+                        <input
+                          className="input-text"
+                          placeholder="Amount"
+                          type="text"
+                          value={dueAmountInput}
+                          onChange={e => setDueAmountInput(formatAmountInput(e.target.value))}
+                          style={{ width: '100%', paddingLeft: '1.4rem' }}
+                        />
+                      </div>
                     </div>
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => {
-                        const parsed = parseDueDateInput(dueDateInput);
-                        const amount = dueAmountInput !== '' ? parseFloat(dueAmountInput) : undefined;
-                        setTools(prev => prev.map(t => t.id !== activeModal.toolId ? t : {
-                          ...t,
-                          accounts: t.accounts.map(a => a.id !== selectedAccount!.id ? a : {
-                            ...a,
-                            dueDate: parsed ?? undefined,
-                            dueAmount: amount
-                          })
-                        }));
-                      }}
-                    >
-                      Save
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input
+                        className="input-text"
+                        placeholder="Note (e.g. For project X)"
+                        value={dueNoteInput}
+                        onChange={e => setDueNoteInput(e.target.value)}
+                        style={{ flex: 1 }}
+                      />
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => {
+                          const parsed = parseDueDateInput(dueDateInput);
+                          const amount = parseAmountInput(dueAmountInput);
+                          setTools(prev => prev.map(t => t.id !== activeModal.toolId ? t : {
+                            ...t,
+                            accounts: t.accounts.map(a => a.id !== selectedAccount!.id ? a : {
+                              ...a,
+                              dueDate: parsed ?? undefined,
+                              dueAmount: amount,
+                              dueNote: dueNoteInput.trim() || undefined
+                            })
+                          }));
+                        }}
+                      >
+                        Save
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
