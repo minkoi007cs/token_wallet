@@ -106,16 +106,19 @@ function calculateBarPercentages(targetTime: number, now: number = Date.now()) {
   }
 
   const totalHours = diff / (1000 * 60 * 60);
-  const days = Math.floor(totalHours / 24);
-  const hoursDecimal = totalHours % 24;
 
-  // 1 day = 1 unit (max 3 days). 1 hour = 1 unit (max 5 hours).
-  // Total units = 3 + 5 = 8. Each unit is exactly 12.5% of the total bar width.
-  const dayUnits = Math.min(days, 3);
-  const hourUnits = Math.min(hoursDecimal, 5);
+  let hoursPercent = 0;
+  let daysPercent = 0;
 
-  const daysPercent = dayUnits * 12.5;
-  const hoursPercent = hourUnits * 12.5;
+  if (totalHours <= 5) {
+    hoursPercent = totalHours * 12.5;
+  } else {
+    hoursPercent = 5 * 12.5; // 62.5% (full 5 hour units)
+    const remainingHours = totalHours - 5;
+    const remainingDays = remainingHours / 24;
+    const dayUnits = Math.min(remainingDays, 3); // Max 3 day units
+    daysPercent = dayUnits * 12.5;
+  }
 
   return { daysPercent, hoursPercent };
 }
