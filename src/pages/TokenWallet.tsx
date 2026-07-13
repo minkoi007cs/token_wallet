@@ -116,8 +116,8 @@ function calculateBarPercentages(targetTime: number, now: number = Date.now()) {
     hoursPercent = 5 * 12.5; // 62.5% (full 5 hour units)
     const remainingHours = totalHours - 5;
     const remainingDays = remainingHours / 24;
-    const dayUnits = Math.min(remainingDays, 3); // Max 3 day units
-    daysPercent = dayUnits * 12.5;
+    const dayUnits = Math.min(remainingDays, 7); // Max 7 day units
+    daysPercent = dayUnits * (37.5 / 7); // Distribute 37.5% remaining width across 7 days
   }
 
   return { daysPercent, hoursPercent };
