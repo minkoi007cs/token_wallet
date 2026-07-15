@@ -85,6 +85,37 @@ export function parseResetTime(input: string): number | null {
     }
   }
 
+  // 1c. Day-of-week + Optional Time: "Fri 1:00 AM", "Friday", "next Mon 16:30"
+  const DAYS_OF_WEEK: Record<string, number> = {
+    sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6,
+    sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6
+  };
+  const dowNames = Object.keys(DAYS_OF_WEEK).join('|');
+  const dowPattern = new RegExp(`^(?:next\\s+)?(${dowNames})(?:\\s+(\\d{1,2}:\\d{2}(?:\\s*(?:am|pm))?))?$`, 'i');
+  const dowMatch = cleanInput.match(dowPattern);
+  if (dowMatch) {
+    const dowStr = dowMatch[1];
+    const timeStr = dowMatch[2];
+    
+    const parsed = timeStr ? parseTimeToken(timeStr.trim()) : { hour: 0, minute: 0 };
+    if (parsed) {
+      const targetDOW = DAYS_OF_WEEK[dowStr.toLowerCase()];
+      const target = new Date(now);
+      target.setHours(parsed.hour, parsed.minute, 0, 0);
+      
+      const currentDOW = target.getDay();
+      let daysToAdd = (targetDOW - currentDOW + 7) % 7;
+      
+      // If today is target DOW but time is already past, assume next week
+      if (daysToAdd === 0 && target.getTime() <= currentTimestamp) {
+        daysToAdd = 7;
+      }
+      
+      target.setDate(target.getDate() + daysToAdd);
+      return target.getTime();
+    }
+  }
+
   // 2. Relative duration: "5h", "2 days 3 hours", "1 week", "in 3h 20m"
   let totalMs = 0;
   let parsedAny = false;
