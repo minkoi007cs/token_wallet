@@ -244,7 +244,8 @@ export default function App() {
   const [toolRenameText, setToolRenameText] = useState('');
   const [accountRenameText, setAccountRenameText] = useState('');
   const [loginHintInput, setLoginHintInput] = useState('');
-
+  const [showActiveOnly, setShowActiveOnly] = useState(false);
+  const [accountGroupSelect, setAccountGroupSelect] = useState('');
 
 
   // Reset fields when modal is closed
@@ -387,9 +388,9 @@ export default function App() {
   }
 
   // Calculate status summary
-  const totalAccounts = tools.reduce((acc, t) => acc + t.accounts.length, 0);
+  const totalAccounts = tools.reduce((acc, t) => acc + t.accounts.filter(a => !a.disabled).length, 0);
   const exhaustedAccounts = tools.reduce(
-    (acc, t) => acc + t.accounts.filter(a => a.status === 'exhausted').length,
+    (acc, t) => acc + t.accounts.filter(a => a.status === 'exhausted' && !a.disabled).length,
     0
   );
   const allExhausted = totalAccounts > 0 && exhaustedAccounts === totalAccounts;
@@ -452,26 +453,7 @@ export default function App() {
     setActiveModal(null);
   };
 
-  const handleRenameAccount = (toolId: string, accountId: string) => {
-    if (!accountRenameText.trim()) return;
-    setTools(prev =>
-      prev.map(t => {
-        if (t.id !== toolId) return t;
-        return {
-          ...t,
-          accounts: t.accounts.map(a => {
-            if (a.id !== accountId) return a;
-            return {
-              ...a,
-              name: accountRenameText.trim(),
-              loginHint: loginHintInput.trim() || undefined
-            };
-          })
-        };
-      })
-    );
-    setActiveModal(null);
-  };
+
 
   const handleRemoveAccount = (toolId: string, accountId: string) => {
     if (!confirm('Are you sure you want to delete this account?')) return;
@@ -581,6 +563,10 @@ export default function App() {
                   `Currently, you have ${totalAccounts - exhaustedAccounts} of ${totalAccounts} accounts ready for work.`
                 )}
               </span>
+              <label style={{ marginLeft: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+                <input type="checkbox" checked={showActiveOnly} onChange={e => setShowActiveOnly(e.target.checked)} />
+                Show ready only
+              </label>
             </div>
           </div>
         </div>
@@ -601,8 +587,8 @@ export default function App() {
       )}
 
       {/* TOOLS & ACCOUNTS DISPLAY */}
-      {tools.map(tool => {
-        const activeCount = tool.accounts.filter(a => a.status === 'active').length;
+      {tools.filter(tool => showActiveOnly ? tool.accounts.some(a => a.status === 'active' && !a.disabled) : true).map(tool => {
+        const activeCount = tool.accounts.filter(a => a.status === 'active' && !a.disabled).length;
 
         return (
           <div className="tool-group" key={tool.id}>
@@ -659,6 +645,7 @@ export default function App() {
 
             <div className="accounts-grid">
                 {[...tool.accounts]
+                .filter(a => showActiveOnly ? (a.status === 'active' && !a.disabled) : true)
                 .sort((a, b) => {
                   if (a.disabled && !b.disabled) return 1;
                   if (!a.disabled && b.disabled) return -1;
@@ -695,8 +682,8 @@ export default function App() {
                         if (!isDisabled && acc.resetTime && acc.resetTime > Date.now()) {
                           setCustomResetInput(getRemainingDurationString(acc.resetTime));
                         } else {
-                          setCustomResetInput('5 hours');
                         }
+                        setAccountGroupSelect(tool.id);
                         setActiveModal({ type: 'manage-account', toolId: tool.id, accountId: acc.id });
                       }}
                     >
@@ -956,11 +943,71 @@ export default function App() {
                   />
                   <button
                     className="btn btn-primary"
-                    disabled={!accountRenameText.trim() || (accountRenameText.trim() === selectedAccount.name && loginHintInput.trim() === (selectedAccount.loginHint || ''))}
-                    onClick={() => handleRenameAccount(activeModal.toolId, selectedAccount!.id)}
+                    disabled={!accountRenameText.trim()}
+                    onClick={() => {
+                      if (!accountRenameText.trim()) return;
+                      const oldToolId = activeModal.toolId;
+                      const newToolId = accountGroupSelect;
+                      
+                      setTools(prev => {
+                        let newTools = [...prev];
+                        // If moving to a new tool
+                        if (oldToolId !== newToolId) {
+                          const oldToolIndex = newTools.findIndex(t => t.id === oldToolId);
+                          const newToolIndex = newTools.findIndex(t => t.id === newToolId);
+                          if (oldToolIndex !== -1 && newToolIndex !== -1) {
+                            const accToMove = newTools[oldToolIndex].accounts.find(a => a.id === selectedAccount!.id);
+                            if (accToMove) {
+                              // Remove from old
+                              newTools[oldToolIndex] = {
+                                ...newTools[oldToolIndex],
+                                accounts: newTools[oldToolIndex].accounts.filter(a => a.id !== selectedAccount!.id)
+                              };
+                              // Add to new
+                              newTools[newToolIndex] = {
+                                ...newTools[newToolIndex],
+                                accounts: [...newTools[newToolIndex].accounts, {
+                                  ...accToMove,
+                                  name: accountRenameText.trim(),
+                                  loginHint: loginHintInput.trim() || undefined
+                                }]
+                              };
+                            }
+                          }
+                        } else {
+                          // Rename in same tool
+                          const tIndex = newTools.findIndex(t => t.id === oldToolId);
+                          if (tIndex !== -1) {
+                            newTools[tIndex] = {
+                              ...newTools[tIndex],
+                              accounts: newTools[tIndex].accounts.map(a => 
+                                a.id !== selectedAccount!.id ? a : {
+                                  ...a,
+                                  name: accountRenameText.trim(),
+                                  loginHint: loginHintInput.trim() || undefined
+                                }
+                              )
+                            };
+                          }
+                        }
+                        return newTools;
+                      });
+                      setActiveModal(null);
+                    }}
                   >
                     Update
                   </button>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Group:</span>
+                  <select 
+                    className="input-select" 
+                    value={accountGroupSelect} 
+                    onChange={e => setAccountGroupSelect(e.target.value)}
+                    style={{ flex: 1 }}
+                  >
+                    {tools.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
                 </div>
               </div>
 
