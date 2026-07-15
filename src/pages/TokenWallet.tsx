@@ -692,7 +692,7 @@ export default function App() {
                         <span className="account-name">{acc.name}</span>
                         {!isDisabled && acc.resetTime && (
                           <span className="reset-time-inline">
-                            - Resets {formatResetTime(acc.resetTime)}
+                            - Resets {formatResetTime(acc.resetTime)} ({formatVerboseCountdown(acc.resetTime, currentTime)})
                           </span>
                         )}
                         {acc.dueDate && !acc.noDue && (
