@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../utils/supabaseClient';
 
 export interface BacklogItem {
@@ -44,13 +44,49 @@ const INITIAL_APP_DATA: AppProject[] = [
     frontendUrl: 'https://token-wallet-chi.vercel.app',
     backendUrl: '',
     hosting: 'Vercel',
-    database: 'LocalStorage',
+    database: 'Supabase (PostgreSQL)',
     type: 'Web App',
-    description: 'A web application to manage AI tool quotas, tokens, and monitor personal portfolio of applications.',
-    techStack: 'TypeScript, React, Vite',
-    techNotes: 'Clean UI with glassmorphism touches and smooth transitions.',
+    description: 'Quản lý hạn mức (quota), thời gian đếm ngược hồi phục tài khoản AI và danh mục ứng dụng portfolio.',
+    techStack: 'React, TypeScript, Vite, Vanilla CSS, Supabase',
+    techNotes: 'Minimalist developer dashboard với hiệu ứng glassmorphism và đồng bộ real-time Supabase.',
     backlog: [],
     status: 'Production',
+    priority: 'High',
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'app-github-beth',
+    name: 'BETH',
+    developer: 'Hoa Hoang',
+    github: 'https://github.com/johnnyhoang/BETH',
+    frontendUrl: 'https://beth-theta.vercel.app',
+    backendUrl: 'https://beth-theta.vercel.app',
+    hosting: 'Vercel',
+    database: 'Supabase (PostgreSQL)',
+    type: 'Web App',
+    description: 'Nền tảng bot giao dịch định lượng tiền điện tử tự động trên sàn Binance Testnet.',
+    techStack: 'Next.js, TypeScript, React, TailwindCSS, Supabase, Binance Testnet',
+    techNotes: 'Hệ thống AI Trading Hub, Decision Engine, Canary mode & kiểm soát rủi ro tự động.',
+    backlog: [],
+    status: 'Production',
+    priority: 'High',
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'app-github-game',
+    name: 'gameEngG10',
+    developer: 'Hoa Hoang',
+    github: 'https://github.com/johnnyhoang/gameEngG10',
+    frontendUrl: 'https://game10-iota.vercel.app',
+    backendUrl: 'https://game10-backend.vercel.app',
+    hosting: 'Vercel',
+    database: 'Supabase (PostgreSQL)',
+    type: 'Web App',
+    description: 'Nền tảng trò chơi học tập tương tác tiếng Anh lớp 10 tích hợp Supabase Auth.',
+    techStack: 'TypeScript, React, Vite, Node.js Backend',
+    techNotes: 'Frontend deploy tại game10-iota.vercel.app, Backend API tại game10-backend.vercel.app.',
+    backlog: [],
+    status: 'Development',
     priority: 'High',
     lastUpdated: Date.now()
   },
@@ -59,17 +95,17 @@ const INITIAL_APP_DATA: AppProject[] = [
     name: 'AdmissionDecisionEngine',
     developer: 'Hoa Hoang',
     github: 'https://github.com/johnnyhoang/AdmissionDecisionEngine',
-    frontendUrl: '',
+    frontendUrl: 'https://ade-flame.vercel.app',
     backendUrl: 'https://ade-backend.vercel.app',
     hosting: 'Vercel',
-    database: '',
+    database: 'Supabase (PostgreSQL)',
     type: 'Web App',
-    description: 'Admission Decision Engine backend system.',
-    techStack: 'TypeScript',
-    techNotes: '',
+    description: 'Hệ thống hỗ trợ ra quyết định tuyển sinh vào lớp 10 tại TP.HCM kèm dữ liệu tọa độ trường học.',
+    techStack: 'TypeScript, NestJS, Vite, React, PostgreSQL',
+    techNotes: 'Frontend deploy tại ade-flame.vercel.app, Backend NestJS API tại ade-backend.vercel.app.',
     backlog: [],
     status: 'Development',
-    priority: 'Medium',
+    priority: 'High',
     lastUpdated: Date.now()
   },
   {
@@ -77,14 +113,50 @@ const INITIAL_APP_DATA: AppProject[] = [
     name: 'coffee_shop_24hxh',
     developer: 'Hoa Hoang',
     github: 'https://github.com/johnnyhoang/coffee_shop_24hxh',
-    frontendUrl: '',
+    frontendUrl: 'https://minkoi.org',
     backendUrl: 'https://coffee24hxh-api.vercel.app',
     hosting: 'Vercel',
-    database: '',
+    database: 'Supabase (PostgreSQL)',
     type: 'Web App',
-    description: 'Coffee shop management system / API.',
-    techStack: 'TypeScript',
-    techNotes: '',
+    description: 'Hệ thống website và API quản lý quán cà phê 24h Minkoi.',
+    techStack: 'TypeScript, NestJS, Vite, React, PostgreSQL',
+    techNotes: 'Custom domain minkoi.org kết nối Vercel, API backend chạy trên coffee24hxh-api.vercel.app.',
+    backlog: [],
+    status: 'Production',
+    priority: 'Medium',
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'app-github-family',
+    name: 'family-management',
+    developer: 'Hoa Hoang',
+    github: 'https://github.com/johnnyhoang/family-management',
+    frontendUrl: 'https://mikoi-family.vercel.app',
+    backendUrl: 'https://mikoi-family-api.vercel.app',
+    hosting: 'Vercel',
+    database: 'Supabase (PostgreSQL)',
+    type: 'Web App',
+    description: 'Ứng dụng quản lý sinh hoạt, tài chính và công việc gia đình.',
+    techStack: 'TypeScript, Vite, Express, PostgreSQL',
+    techNotes: 'Frontend Mikoi Family tại mikoi-family.vercel.app, Backend API tại mikoi-family-api.vercel.app.',
+    backlog: [],
+    status: 'Development',
+    priority: 'Medium',
+    lastUpdated: Date.now()
+  },
+  {
+    id: 'app-github-qlhs',
+    name: 'qlhs_dtnt',
+    developer: 'Hoa Hoang',
+    github: 'https://github.com/johnnyhoang/qlhs_dtnt',
+    frontendUrl: 'https://qlhs-dtnt-qqib-johnnyhoang-2372s-projects.vercel.app',
+    backendUrl: 'https://qlhs-dtnt.vercel.app',
+    hosting: 'Vercel',
+    database: 'Supabase (PostgreSQL)',
+    type: 'Web App',
+    description: 'Hệ thống quản lý thông tin học sinh dân tộc nội trú.',
+    techStack: 'TypeScript, Express, Vite, React',
+    techNotes: 'Frontend giao diện học sinh/giáo viên, backend API quản trị.',
     backlog: [],
     status: 'Development',
     priority: 'Medium',
@@ -97,51 +169,15 @@ const INITIAL_APP_DATA: AppProject[] = [
     github: 'https://github.com/johnnyhoang/dev-brain',
     frontendUrl: '',
     backendUrl: '',
-    hosting: '',
+    hosting: 'GitHub',
     database: '',
     type: 'Other',
-    description: 'dev-brain',
-    techStack: '',
-    techNotes: '',
+    description: 'Kho lưu trữ ghi chú kỹ thuật, tài liệu và kịch bản tự động hóa nhà phát triển.',
+    techStack: 'TypeScript, Python, Markdown',
+    techNotes: 'Developer knowledge base và scripts indexing.',
     backlog: [],
     status: 'Development',
-    priority: 'Medium',
-    lastUpdated: Date.now()
-  },
-  {
-    id: 'app-github-family',
-    name: 'family-management',
-    developer: 'Hoa Hoang',
-    github: 'https://github.com/johnnyhoang/family-management',
-    frontendUrl: 'https://family-management-eight.vercel.app',
-    backendUrl: '',
-    hosting: 'Vercel',
-    database: '',
-    type: 'Web App',
-    description: 'family-management application.',
-    techStack: 'TypeScript',
-    techNotes: '',
-    backlog: [],
-    status: 'Development',
-    priority: 'Medium',
-    lastUpdated: Date.now()
-  },
-  {
-    id: 'app-github-game',
-    name: 'gameEngG10',
-    developer: 'Hoa Hoang',
-    github: 'https://github.com/johnnyhoang/gameEngG10',
-    frontendUrl: '',
-    backendUrl: 'https://game-eng-g10-backend.vercel.app',
-    hosting: 'Vercel',
-    database: '',
-    type: 'Web App',
-    description: 'Game Engine G10 backend.',
-    techStack: 'TypeScript',
-    techNotes: '',
-    backlog: [],
-    status: 'Development',
-    priority: 'Medium',
+    priority: 'Low',
     lastUpdated: Date.now()
   },
   {
@@ -151,105 +187,15 @@ const INITIAL_APP_DATA: AppProject[] = [
     github: 'https://github.com/johnnyhoang/photo-clear-1',
     frontendUrl: '',
     backendUrl: '',
-    hosting: '',
+    hosting: 'Local',
     database: '',
-    type: 'Other',
-    description: 'Photo clearing or enhancement tool.',
-    techStack: 'Python',
-    techNotes: '',
+    type: 'Desktop App',
+    description: 'Công cụ tìm kiếm ảnh trùng lặp, dọn dẹp và nâng cao chất lượng ảnh.',
+    techStack: 'Python, OpenCV, PyQt',
+    techNotes: 'Xử lý ảnh local và lọc ảnh trùng lặp thông minh.',
     backlog: [],
     status: 'Development',
-    priority: 'Medium',
-    lastUpdated: Date.now()
-  },
-  {
-    id: 'app-github-qlhs',
-    name: 'qlhs_dtnt',
-    developer: 'Hoa Hoang',
-    github: 'https://github.com/johnnyhoang/qlhs_dtnt',
-    frontendUrl: 'https://qlhs-dtnt.vercel.app',
-    backendUrl: '',
-    hosting: 'Vercel',
-    database: '',
-    type: 'Web App',
-    description: 'Website quan ly hoc sinh dan toc noi tru.',
-    techStack: 'TypeScript',
-    techNotes: '',
-    backlog: [],
-    status: 'Development',
-    priority: 'Medium',
-    lastUpdated: Date.now()
-  },
-  {
-    id: 'app-vercel-game10',
-    name: 'game10',
-    developer: 'Hoa Hoang',
-    github: '',
-    frontendUrl: 'https://game10-iota.vercel.app',
-    backendUrl: '',
-    hosting: 'Vercel',
-    database: '',
-    type: 'Web App',
-    description: 'game10 Frontend on Vercel',
-    techStack: 'TypeScript',
-    techNotes: '',
-    backlog: [],
-    status: 'Development',
-    priority: 'Medium',
-    lastUpdated: Date.now()
-  },
-  {
-    id: 'app-vercel-ade',
-    name: 'ade',
-    developer: 'Hoa Hoang',
-    github: '',
-    frontendUrl: 'https://ade-flame.vercel.app',
-    backendUrl: '',
-    hosting: 'Vercel',
-    database: '',
-    type: 'Web App',
-    description: 'ADE Frontend on Vercel',
-    techStack: 'TypeScript',
-    techNotes: '',
-    backlog: [],
-    status: 'Development',
-    priority: 'Medium',
-    lastUpdated: Date.now()
-  },
-  {
-    id: 'app-vercel-coffee24',
-    name: 'coffee24hxh',
-    developer: 'Hoa Hoang',
-    github: '',
-    frontendUrl: 'https://minkoi.org',
-    backendUrl: '',
-    hosting: 'Vercel',
-    database: '',
-    type: 'Web App',
-    description: 'Coffee 24h Frontend on Vercel (minkoi.org)',
-    techStack: 'TypeScript',
-    techNotes: '',
-    backlog: [],
-    status: 'Development',
-    priority: 'Medium',
-    lastUpdated: Date.now()
-  },
-  {
-    id: 'app-vercel-mikoifamilyapi',
-    name: 'mikoi-family-api',
-    developer: 'Hoa Hoang',
-    github: '',
-    frontendUrl: 'https://mikoi-family-api.vercel.app',
-    backendUrl: '',
-    hosting: 'Vercel',
-    database: '',
-    type: 'Web App',
-    description: 'Mikoi Family API on Vercel',
-    techStack: 'TypeScript',
-    techNotes: '',
-    backlog: [],
-    status: 'Development',
-    priority: 'Medium',
+    priority: 'Low',
     lastUpdated: Date.now()
   },
   {
@@ -259,12 +205,12 @@ const INITIAL_APP_DATA: AppProject[] = [
     github: '',
     frontendUrl: 'https://supabase.com/dashboard/project/xzmqeibqvgrthuisghvu',
     backendUrl: '',
-    hosting: '',
-    database: 'Supabase',
-    type: 'Web App',
-    description: 'Canvas project on Supabase',
-    techStack: 'Supabase',
-    techNotes: '',
+    hosting: 'Supabase',
+    database: 'Supabase (PostgreSQL)',
+    type: 'Other',
+    description: 'Dự án cơ sở dữ liệu Canvas trên Supabase.',
+    techStack: 'Supabase, PostgreSQL',
+    techNotes: 'Bảng dữ liệu và schema cho ứng dụng Canvas.',
     backlog: [],
     status: 'Development',
     priority: 'Medium',
@@ -277,12 +223,12 @@ const INITIAL_APP_DATA: AppProject[] = [
     github: '',
     frontendUrl: 'https://supabase.com/dashboard/project/lnuijfoohwvunatwuqjx',
     backendUrl: '',
-    hosting: '',
-    database: 'Supabase',
-    type: 'Web App',
-    description: 'House Renting project on Supabase',
-    techStack: 'Supabase',
-    techNotes: '',
+    hosting: 'Supabase',
+    database: 'Supabase (PostgreSQL)',
+    type: 'Other',
+    description: 'Dự án cơ sở dữ liệu quản lý thuê nhà trên Supabase.',
+    techStack: 'Supabase, PostgreSQL',
+    techNotes: 'Bảng dữ liệu và schema quản lý bất động sản cho thuê.',
     backlog: [],
     status: 'Development',
     priority: 'Medium',
@@ -306,7 +252,7 @@ export default function AppWallet() {
           developer: p.developer || '',
           github: p.github || '',
           frontendUrl: p.url || '', // database column is `url`
-          backendUrl: '',
+          backendUrl: p.backend_url || '',
           hosting: p.hosting || '',
           database: p.database || '',
           type: p.type || '',
@@ -357,12 +303,112 @@ export default function AppWallet() {
 
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
 
+  // Search, Filter & Sort states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [priorityFilter, setPriorityFilter] = useState('ALL');
+  const [visibilityFilter, setVisibilityFilter] = useState<'ALL' | 'ACTIVE' | 'DISABLED'>('ALL');
+  const [sortBy, setSortBy] = useState<'lastUpdated' | 'name' | 'priority' | 'backlog'>('lastUpdated');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
   // Form states
   const [formData, setFormData] = useState<Partial<AppProject>>({});
   const [backlogItems, setBacklogItems] = useState<BacklogItem[]>([]);
   const [newBacklogTitle, setNewBacklogTitle] = useState('');
   const [newBacklogAssignee, setNewBacklogAssignee] = useState('');
   const [newBacklogPriority, setNewBacklogPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
+
+  // Available unique types from apps
+  const availableTypes = useMemo(() => {
+    const defaultTypes = ['Web App', 'Android App', 'iOS App', 'Desktop App', 'Other'];
+    const customTypes = apps.map(a => a.type).filter(Boolean);
+    return Array.from(new Set([...defaultTypes, ...customTypes]));
+  }, [apps]);
+
+  // Check if any filter or search is active
+  const isFilterActive = useMemo(() => {
+    return (
+      searchQuery.trim() !== '' ||
+      statusFilter !== 'ALL' ||
+      typeFilter !== 'ALL' ||
+      priorityFilter !== 'ALL' ||
+      visibilityFilter !== 'ALL'
+    );
+  }, [searchQuery, statusFilter, typeFilter, priorityFilter, visibilityFilter]);
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('ALL');
+    setTypeFilter('ALL');
+    setPriorityFilter('ALL');
+    setVisibilityFilter('ALL');
+    setSortBy('lastUpdated');
+    setSortOrder('desc');
+  };
+
+  // Filtered & Sorted Apps
+  const filteredAndSortedApps = useMemo(() => {
+    const priorityWeight: Record<string, number> = { High: 3, Medium: 2, Low: 1 };
+
+    return apps
+      .filter(app => {
+        // 1. Search Query
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase().trim();
+          const matchesName = (app.name || '').toLowerCase().includes(q);
+          const matchesDev = (app.developer || '').toLowerCase().includes(q);
+          const matchesTech = (app.techStack || '').toLowerCase().includes(q);
+          const matchesDesc = (app.description || '').toLowerCase().includes(q);
+          const matchesType = (app.type || '').toLowerCase().includes(q);
+          const matchesHost = (app.hosting || '').toLowerCase().includes(q);
+          if (!matchesName && !matchesDev && !matchesTech && !matchesDesc && !matchesType && !matchesHost) {
+            return false;
+          }
+        }
+
+        // 2. Status Filter
+        if (statusFilter !== 'ALL' && (app.status || '').toLowerCase() !== statusFilter.toLowerCase()) {
+          return false;
+        }
+
+        // 3. Type Filter
+        if (typeFilter !== 'ALL' && (app.type || '').toLowerCase() !== typeFilter.toLowerCase()) {
+          return false;
+        }
+
+        // 4. Priority Filter
+        if (priorityFilter !== 'ALL' && (app.priority || '').toLowerCase() !== priorityFilter.toLowerCase()) {
+          return false;
+        }
+
+        // 5. Visibility Filter
+        if (visibilityFilter === 'ACTIVE' && app.isDisabled) {
+          return false;
+        }
+        if (visibilityFilter === 'DISABLED' && !app.isDisabled) {
+          return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        let comparison = 0;
+        if (sortBy === 'name') {
+          comparison = (a.name || '').localeCompare(b.name || '');
+        } else if (sortBy === 'lastUpdated') {
+          comparison = (a.lastUpdated || 0) - (b.lastUpdated || 0);
+        } else if (sortBy === 'priority') {
+          const weightA = priorityWeight[a.priority] || 0;
+          const weightB = priorityWeight[b.priority] || 0;
+          comparison = weightA - weightB;
+        } else if (sortBy === 'backlog') {
+          comparison = (a.backlog?.length || 0) - (b.backlog?.length || 0);
+        }
+
+        return sortOrder === 'asc' ? comparison : -comparison;
+      });
+  }, [apps, searchQuery, statusFilter, typeFilter, priorityFilter, visibilityFilter, sortBy, sortOrder]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -375,6 +421,7 @@ export default function AppWallet() {
           developer: p.developer,
           github: p.github,
           url: p.frontendUrl,
+          backend_url: p.backendUrl,
           hosting: p.hosting,
           database: p.database,
           type: p.type,
@@ -573,20 +620,194 @@ export default function AppWallet() {
   };
 
   return (
-    <div className="app-wallet-container" style={{ padding: '1rem', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-        <h2>My Apps Portfolio</h2>
-        <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          Add New App
-        </button>
+    <div className="app-wallet-container" style={{ padding: '0', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
+      {/* STICKY HEADER & FILTER TOOLBAR */}
+      <div className="app-wallet-sticky-section">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>My Apps Portfolio</h2>
+          <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add New App
+          </button>
+        </div>
+
+        {/* FILTER, SEARCH & SORT TOOLBAR */}
+        <div className="app-filter-toolbar">
+        <div className="filter-main-row">
+          {/* Search Box */}
+          <div className="search-input-wrapper">
+            <span className="search-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </span>
+            <input
+              type="text"
+              className="search-input-field"
+              placeholder="Search apps by name, tech, developer, description..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button className="search-clear-btn" onClick={() => setSearchQuery('')} title="Clear search">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {/* Filter Selects */}
+          <div className="filter-selects-group">
+            {/* Status Filter */}
+            <select
+              className={`toolbar-select ${statusFilter !== 'ALL' ? 'active-filter' : ''}`}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              title="Filter by Status"
+            >
+              <option value="ALL">All Status</option>
+              <option value="Production">Production</option>
+              <option value="Development">Development</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Deprecated">Deprecated</option>
+            </select>
+
+            {/* Type Filter */}
+            <select
+              className={`toolbar-select ${typeFilter !== 'ALL' ? 'active-filter' : ''}`}
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              title="Filter by Type"
+            >
+              <option value="ALL">All Types</option>
+              {availableTypes.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+
+            {/* Priority Filter */}
+            <select
+              className={`toolbar-select ${priorityFilter !== 'ALL' ? 'active-filter' : ''}`}
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              title="Filter by Priority"
+            >
+              <option value="ALL">All Priority</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+
+            {/* Visibility / Active Filter */}
+            <select
+              className={`toolbar-select ${visibilityFilter !== 'ALL' ? 'active-filter' : ''}`}
+              value={visibilityFilter}
+              onChange={(e) => setVisibilityFilter(e.target.value as any)}
+              title="Filter by Visibility"
+            >
+              <option value="ALL">All Visibility</option>
+              <option value="ACTIVE">Active Only</option>
+              <option value="DISABLED">Disabled Only</option>
+            </select>
+
+            {/* Sort Criteria */}
+            <select
+              className="toolbar-select"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              title="Sort By"
+            >
+              <option value="lastUpdated">Sort by: Updated</option>
+              <option value="name">Sort by: Name</option>
+              <option value="priority">Sort by: Priority</option>
+              <option value="backlog">Sort by: Backlog Tasks</option>
+            </select>
+
+            {/* Sort Order Toggle */}
+            <button
+              className="sort-direction-btn"
+              onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+              title={sortOrder === 'asc' ? 'Ascending (A-Z, Low-High, Oldest-Newest). Click to switch to Descending' : 'Descending (Z-A, High-Low, Newest-Oldest). Click to switch to Ascending'}
+            >
+              {sortOrder === 'asc' ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14M19 12l-7-7-7 7" />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 19V5M5 12l7 7 7-7" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Filter Summary & Active Chips Row */}
+        <div className="filter-sub-row">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <span>
+              Showing <strong style={{ color: 'var(--text-main)' }}>{filteredAndSortedApps.length}</strong> of {apps.length} apps
+            </span>
+
+            {/* Active Chips */}
+            {isFilterActive && (
+              <div className="filter-chips-list">
+                {searchQuery.trim() && (
+                  <span className="filter-chip">
+                    Search: "{searchQuery.trim()}"
+                    <span className="filter-chip-remove" onClick={() => setSearchQuery('')}>✕</span>
+                  </span>
+                )}
+                {statusFilter !== 'ALL' && (
+                  <span className="filter-chip">
+                    Status: {statusFilter}
+                    <span className="filter-chip-remove" onClick={() => setStatusFilter('ALL')}>✕</span>
+                  </span>
+                )}
+                {typeFilter !== 'ALL' && (
+                  <span className="filter-chip">
+                    Type: {typeFilter}
+                    <span className="filter-chip-remove" onClick={() => setTypeFilter('ALL')}>✕</span>
+                  </span>
+                )}
+                {priorityFilter !== 'ALL' && (
+                  <span className="filter-chip">
+                    Priority: {priorityFilter}
+                    <span className="filter-chip-remove" onClick={() => setPriorityFilter('ALL')}>✕</span>
+                  </span>
+                )}
+                {visibilityFilter !== 'ALL' && (
+                  <span className="filter-chip">
+                    {visibilityFilter === 'ACTIVE' ? 'Active only' : 'Disabled only'}
+                    <span className="filter-chip-remove" onClick={() => setVisibilityFilter('ALL')}>✕</span>
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {isFilterActive && (
+            <button className="btn-reset-filters" onClick={handleResetFilters}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+              Reset Filters
+            </button>
+          )}
+        </div>
+      </div>
       </div>
 
+      {/* APPS LIST GRID */}
       <div className="tools-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
-        {apps.map(app => (
+        {filteredAndSortedApps.map(app => (
           <div key={app.id} className={`tool-card ${app.isDisabled ? 'disabled' : ''}`} style={{ position: 'relative', opacity: app.isDisabled ? 0.6 : 1, transition: 'all 0.2s', cursor: 'pointer' }} onClick={() => setActiveModal({ type: 'project-detail', app })}>
             <div className="tool-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ flex: 1 }}>
@@ -597,9 +818,14 @@ export default function AppWallet() {
                 >
                   {app.name}
                 </h2>
-                <div style={{ marginTop: '0.25rem' }}>
-                  <span className={`status-badge ${app.status.toLowerCase()}`}>{app.status}</span>
-                  {app.isDisabled && <span className="status-badge" style={{ marginLeft: '0.5rem', backgroundColor: 'var(--color-border)', color: 'var(--text-muted)' }}>DISABLED</span>}
+                <div style={{ marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span className={`status-badge ${app.status?.toLowerCase()}`}>{app.status}</span>
+                  {app.priority && (
+                    <span className={`priority-badge ${app.priority.toLowerCase()}`}>
+                      {app.priority}
+                    </span>
+                  )}
+                  {app.isDisabled && <span className="status-badge" style={{ backgroundColor: 'var(--color-border)', color: 'var(--text-muted)' }}>DISABLED</span>}
                 </div>
               </div>
               
@@ -655,9 +881,30 @@ export default function AppWallet() {
             </div>
           </div>
         ))}
+
+        {/* Empty States */}
         {apps.length === 0 && (
           <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
             <p>No apps yet. Click "Add New App" to start building your portfolio.</p>
+          </div>
+        )}
+
+        {apps.length > 0 && filteredAndSortedApps.length === 0 && (
+          <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 1rem', display: 'block', opacity: 0.5 }}>
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+            <p style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+              No matching apps found
+            </p>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+              Try adjusting your search keywords or clearing some filters.
+            </p>
+            <button className="btn btn-primary btn-sm" onClick={handleResetFilters}>
+              Clear All Filters
+            </button>
           </div>
         )}
       </div>
