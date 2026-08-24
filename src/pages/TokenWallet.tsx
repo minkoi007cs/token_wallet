@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { parseResetTime, formatResetTime, formatVerboseCountdown, formatVerboseResetTime, getRemainingDurationString } from '../utils/timeParser';
 import { supabase } from '../utils/supabaseClient';
 
@@ -244,8 +244,134 @@ export default function App() {
   const [toolRenameText, setToolRenameText] = useState('');
   const [accountRenameText, setAccountRenameText] = useState('');
   const [loginHintInput, setLoginHintInput] = useState('');
-  const [showActiveOnly, setShowActiveOnly] = useState(false);
   const [accountGroupSelect, setAccountGroupSelect] = useState('');
+
+  // Search, Filter & Sort states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'active' | 'exhausted'>('ALL');
+  const [toolFilter, setToolFilter] = useState('ALL');
+  const [dueFilter, setDueFilter] = useState<'ALL' | 'DUE_SOON' | 'OVERDUE' | 'HAS_DUE' | 'NO_DUE'>('ALL');
+  const [visibilityFilter, setVisibilityFilter] = useState<'ALL' | 'ACTIVE' | 'DISABLED'>('ALL');
+  const [sortBy, setSortBy] = useState<'resetTime' | 'name' | 'dueDate' | 'status'>('resetTime');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Check if any filter is active
+  const isFilterActive = useMemo(() => {
+    return (
+      searchQuery.trim() !== '' ||
+      statusFilter !== 'ALL' ||
+      toolFilter !== 'ALL' ||
+      dueFilter !== 'ALL' ||
+      visibilityFilter !== 'ALL'
+    );
+  }, [searchQuery, statusFilter, toolFilter, dueFilter, visibilityFilter]);
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('ALL');
+    setToolFilter('ALL');
+    setDueFilter('ALL');
+    setVisibilityFilter('ALL');
+    setSortBy('resetTime');
+    setSortOrder('asc');
+  };
+
+  // Filtered & Sorted Tools and Accounts
+  const filteredAndSortedTools = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+
+    return tools
+      .filter(tool => {
+        if (toolFilter !== 'ALL' && tool.id !== toolFilter) return false;
+        return true;
+      })
+      .map(tool => {
+        const matchingAccounts = tool.accounts.filter(acc => {
+          // 1. Search Query
+          if (q) {
+            const matchesAccName = (acc.name || '').toLowerCase().includes(q);
+            const matchesToolName = (tool.name || '').toLowerCase().includes(q);
+            const matchesHint = (acc.loginHint || '').toLowerCase().includes(q);
+            const matchesNote = (acc.dueNote || '').toLowerCase().includes(q);
+            if (!matchesAccName && !matchesToolName && !matchesHint && !matchesNote) {
+              return false;
+            }
+          }
+
+          // 2. Status Filter
+          if (statusFilter !== 'ALL' && acc.status !== statusFilter) {
+            return false;
+          }
+
+          // 3. Visibility Filter
+          if (visibilityFilter === 'ACTIVE' && acc.disabled) {
+            return false;
+          }
+          if (visibilityFilter === 'DISABLED' && !acc.disabled) {
+            return false;
+          }
+
+          // 4. Due Date Filter
+          if (dueFilter === 'HAS_DUE' && (!acc.dueDate || acc.noDue)) {
+            return false;
+          }
+          if (dueFilter === 'NO_DUE' && (acc.dueDate && !acc.noDue)) {
+            return false;
+          }
+          if (dueFilter === 'DUE_SOON') {
+            if (!acc.dueDate || acc.noDue) return false;
+            const daysUntil = (acc.dueDate - currentTime) / (1000 * 60 * 60 * 24);
+            if (daysUntil < 0 || daysUntil > 5) return false;
+          }
+          if (dueFilter === 'OVERDUE') {
+            if (!acc.dueDate || acc.noDue) return false;
+            const daysUntil = (acc.dueDate - currentTime) / (1000 * 60 * 60 * 24);
+            if (daysUntil >= 0) return false;
+          }
+
+          return true;
+        });
+
+        // Sort accounts inside tool
+        const sortedAccounts = [...matchingAccounts].sort((a, b) => {
+          if (a.disabled && !b.disabled) return 1;
+          if (!a.disabled && b.disabled) return -1;
+
+          let comp = 0;
+          if (sortBy === 'name') {
+            comp = (a.name || '').localeCompare(b.name || '');
+          } else if (sortBy === 'resetTime') {
+            const timeA = a.resetTime || Infinity;
+            const timeB = b.resetTime || Infinity;
+            comp = timeA - timeB;
+          } else if (sortBy === 'dueDate') {
+            const dueA = a.dueDate || Infinity;
+            const dueB = b.dueDate || Infinity;
+            comp = dueA - dueB;
+          } else if (sortBy === 'status') {
+            if (a.status === 'active' && b.status !== 'active') comp = -1;
+            else if (a.status !== 'active' && b.status === 'active') comp = 1;
+            else comp = 0;
+          }
+
+          return sortOrder === 'asc' ? comp : -comp;
+        });
+
+        return {
+          ...tool,
+          accounts: sortedAccounts
+        };
+      })
+      .filter(tool => tool.accounts.length > 0 || (toolFilter === tool.id && !isFilterActive));
+  }, [tools, searchQuery, statusFilter, toolFilter, dueFilter, visibilityFilter, sortBy, sortOrder, currentTime, isFilterActive]);
+
+  const totalFilteredAccounts = useMemo(() => {
+    return filteredAndSortedTools.reduce((acc, t) => acc + t.accounts.length, 0);
+  }, [filteredAndSortedTools]);
+
+  const totalAllAccounts = useMemo(() => {
+    return tools.reduce((acc, t) => acc + t.accounts.length, 0);
+  }, [tools]);
 
 
   // Reset fields when modal is closed
@@ -550,27 +676,204 @@ export default function App() {
         </div>
       )}
 
-      {/* GLOBAL STATUS BANNER */}
-      {totalAccounts > 0 && (
-        <div className={`global-status-banner ${allExhausted ? 'all-exhausted' : 'has-active'}`} style={{ padding: '0.75rem 1.25rem', marginBottom: '1.5rem' }}>
-          <div className="status-info" style={{ width: '100%', justifyContent: 'space-between', display: 'flex', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span className={`status-indicator-dot ${allExhausted ? 'exhausted' : 'active'}`}></span>
-              <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>
-                {allExhausted ? (
-                  `ready for work at soonest ${formatVerboseCountdown(soonestResetTime, currentTime)} (${formatVerboseResetTime(soonestResetTime)})`
-                ) : (
-                  `Currently, you have ${totalAccounts - exhaustedAccounts} of ${totalAccounts} accounts ready for work.`
-                )}
-              </span>
-              <label style={{ marginLeft: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
-                <input type="checkbox" checked={showActiveOnly} onChange={e => setShowActiveOnly(e.target.checked)} />
-                Show ready only
-              </label>
+      {/* STICKY HEADER & TOOLBAR SECTION */}
+      <div className="token-wallet-sticky-section">
+        {/* GLOBAL STATUS BANNER */}
+        {totalAccounts > 0 && (
+          <div className={`global-status-banner ${allExhausted ? 'all-exhausted' : 'has-active'}`} style={{ padding: '0.75rem 1.25rem', marginBottom: '0.875rem' }}>
+            <div className="status-info" style={{ width: '100%', justifyContent: 'space-between', display: 'flex', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span className={`status-indicator-dot ${allExhausted ? 'exhausted' : 'active'}`}></span>
+                <span style={{ fontSize: '0.95rem', fontWeight: '500' }}>
+                  {allExhausted ? (
+                    `ready for work at soonest ${formatVerboseCountdown(soonestResetTime, currentTime)} (${formatVerboseResetTime(soonestResetTime)})`
+                  ) : (
+                    `Currently, you have ${totalAccounts - exhaustedAccounts} of ${totalAccounts} accounts ready for work.`
+                  )}
+                </span>
+              </div>
             </div>
           </div>
+        )}
+
+        {/* FILTER, SEARCH & SORT TOOLBAR */}
+        <div className="app-filter-toolbar">
+          <div className="filter-main-row">
+            {/* Search Box */}
+            <div className="search-input-wrapper">
+              <span className="search-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </span>
+              <input
+                type="text"
+                className="search-input-field"
+                placeholder="Search accounts, tools, hints, notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button className="search-clear-btn" onClick={() => setSearchQuery('')} title="Clear search">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Filter Selects */}
+            <div className="filter-selects-group">
+              {/* Tool Category Filter */}
+              <select
+                className={`toolbar-select ${toolFilter !== 'ALL' ? 'active-filter' : ''}`}
+                value={toolFilter}
+                onChange={(e) => setToolFilter(e.target.value)}
+                title="Filter by Tool"
+              >
+                <option value="ALL">All Tools</option>
+                {tools.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+
+              {/* Status Filter */}
+              <select
+                className={`toolbar-select ${statusFilter !== 'ALL' ? 'active-filter' : ''}`}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                title="Filter by Status"
+              >
+                <option value="ALL">All Status</option>
+                <option value="active">Active Only</option>
+                <option value="exhausted">Exhausted Only</option>
+              </select>
+
+              {/* Due Date Filter */}
+              <select
+                className={`toolbar-select ${dueFilter !== 'ALL' ? 'active-filter' : ''}`}
+                value={dueFilter}
+                onChange={(e) => setDueFilter(e.target.value as any)}
+                title="Filter by Payment Due"
+              >
+                <option value="ALL">All Due Dates</option>
+                <option value="DUE_SOON">Due Soon (≤ 5 days)</option>
+                <option value="OVERDUE">Overdue</option>
+                <option value="HAS_DUE">Has Payment Info</option>
+                <option value="NO_DUE">No Payment Info</option>
+              </select>
+
+              {/* Visibility Filter */}
+              <select
+                className={`toolbar-select ${visibilityFilter !== 'ALL' ? 'active-filter' : ''}`}
+                value={visibilityFilter}
+                onChange={(e) => setVisibilityFilter(e.target.value as any)}
+                title="Filter by Visibility"
+              >
+                <option value="ALL">All Visibility</option>
+                <option value="ACTIVE">Active Only</option>
+                <option value="DISABLED">Disabled Only</option>
+              </select>
+
+              {/* Sort Criteria */}
+              <select
+                className="toolbar-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                title="Sort By"
+              >
+                <option value="resetTime">Sort by: Reset Time</option>
+                <option value="name">Sort by: Name</option>
+                <option value="dueDate">Sort by: Due Date</option>
+                <option value="status">Sort by: Status</option>
+              </select>
+
+              {/* Sort Order Toggle */}
+              <button
+                className="sort-direction-btn"
+                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                title={sortOrder === 'asc' ? 'Ascending. Click to switch to Descending' : 'Descending. Click to switch to Ascending'}
+              >
+                {sortOrder === 'asc' ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14M19 12l-7-7-7 7" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 19V5M5 12l7 7 7-7" />
+                  </svg>
+                )}
+              </button>
+
+              {/* Add Tool Button */}
+              <button className="btn btn-primary" onClick={() => setActiveModal({ type: 'add-tool' })} style={{ height: '38px', padding: '0 0.85rem' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Add Tool
+              </button>
+            </div>
+          </div>
+
+          {/* Filter Summary & Active Chips Row */}
+          <div className="filter-sub-row">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <span>
+                Showing <strong style={{ color: 'var(--text-main)' }}>{totalFilteredAccounts}</strong> of {totalAllAccounts} accounts
+              </span>
+
+              {/* Active Chips */}
+              {isFilterActive && (
+                <div className="filter-chips-list">
+                  {searchQuery.trim() && (
+                    <span className="filter-chip">
+                      Search: "{searchQuery.trim()}"
+                      <span className="filter-chip-remove" onClick={() => setSearchQuery('')}>✕</span>
+                    </span>
+                  )}
+                  {toolFilter !== 'ALL' && (
+                    <span className="filter-chip">
+                      Tool: {tools.find(t => t.id === toolFilter)?.name || toolFilter}
+                      <span className="filter-chip-remove" onClick={() => setToolFilter('ALL')}>✕</span>
+                    </span>
+                  )}
+                  {statusFilter !== 'ALL' && (
+                    <span className="filter-chip">
+                      Status: {statusFilter === 'active' ? 'Active only' : 'Exhausted only'}
+                      <span className="filter-chip-remove" onClick={() => setStatusFilter('ALL')}>✕</span>
+                    </span>
+                  )}
+                  {dueFilter !== 'ALL' && (
+                    <span className="filter-chip">
+                      Due: {dueFilter === 'DUE_SOON' ? '≤ 5 days' : dueFilter === 'OVERDUE' ? 'Overdue' : dueFilter === 'HAS_DUE' ? 'Has Payment' : 'No Payment'}
+                      <span className="filter-chip-remove" onClick={() => setDueFilter('ALL')}>✕</span>
+                    </span>
+                  )}
+                  {visibilityFilter !== 'ALL' && (
+                    <span className="filter-chip">
+                      {visibilityFilter === 'ACTIVE' ? 'Active only' : 'Disabled only'}
+                      <span className="filter-chip-remove" onClick={() => setVisibilityFilter('ALL')}>✕</span>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {isFilterActive && (
+              <button className="btn-reset-filters" onClick={handleResetFilters}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
+                Reset Filters
+              </button>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
       {tools.length === 0 && (
         <div className="empty-state">
@@ -586,8 +889,27 @@ export default function App() {
         </div>
       )}
 
+      {tools.length > 0 && totalFilteredAccounts === 0 && (
+        <div className="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 1rem', display: 'block', opacity: 0.5 }}>
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+          <p style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+            No matching accounts found
+          </p>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+            Try adjusting your search keywords or clearing some filters.
+          </p>
+          <button className="btn btn-primary btn-sm" onClick={handleResetFilters}>
+            Clear All Filters
+          </button>
+        </div>
+      )}
+
       {/* TOOLS & ACCOUNTS DISPLAY */}
-      {tools.filter(tool => showActiveOnly ? tool.accounts.some(a => a.status === 'active' && !a.disabled) : true).map(tool => {
+      {filteredAndSortedTools.map(tool => {
         const activeCount = tool.accounts.filter(a => a.status === 'active' && !a.disabled).length;
 
         return (
@@ -644,85 +966,72 @@ export default function App() {
             </div>
 
             <div className="accounts-grid">
-                {[...tool.accounts]
-                .filter(a => showActiveOnly ? (a.status === 'active' && !a.disabled) : true)
-                .sort((a, b) => {
-                  if (a.disabled && !b.disabled) return 1;
-                  if (!a.disabled && b.disabled) return -1;
-                  
-                  if (a.status === 'active' && b.status !== 'active') return -1;
-                  if (a.status !== 'active' && b.status === 'active') return 1;
+              {tool.accounts.map(acc => {
+                const isActive = acc.status === 'active';
+                const isDisabled = !!acc.disabled;
 
-                  return (a.resetTime || 0) - (b.resetTime || 0);
-                })
-                .map(acc => {
-                  const isActive = acc.status === 'active';
-                  const isDisabled = !!acc.disabled;
+                // Due date badge colour
+                let dueBadgeClass = '';
+                if (acc.dueDate) {
+                  const daysUntilDue = (acc.dueDate - currentTime) / (1000 * 60 * 60 * 24);
+                  if (daysUntilDue < 0)        dueBadgeClass = 'due-overdue';
+                  else if (daysUntilDue <= 5)  dueBadgeClass = 'due-soon';
+                  else                          dueBadgeClass = 'due-ok';
+                }
 
-                  // Due date badge colour
-                  let dueBadgeClass = '';
-                  if (acc.dueDate) {
-                    const daysUntilDue = (acc.dueDate - currentTime) / (1000 * 60 * 60 * 24);
-                    if (daysUntilDue < 0)        dueBadgeClass = 'due-overdue';
-                    else if (daysUntilDue <= 5)  dueBadgeClass = 'due-soon';
-                    else                          dueBadgeClass = 'due-ok';
-                  }
-
-                  return (
-                    <div
-                      key={acc.id}
-                      className={`account-card ${isDisabled ? 'disabled' : isActive ? 'active' : 'exhausted'}`}
-                      onClick={() => {
-                        setAccountRenameText(acc.name);
-                        setLoginHintInput(acc.loginHint || '');
-                        setDueDateInput(acc.dueDate ? formatDueDateInput(acc.dueDate) : '');
-                        setDueAmountInput(acc.dueAmount != null ? formatAmountInput(acc.dueAmount) : '');
-                        setDueNoteInput(acc.dueNote || '');
-                        setNoDue(acc.noDue ?? !acc.dueDate);
-                        if (!isDisabled && acc.resetTime && acc.resetTime > Date.now()) {
-                          setCustomResetInput(getRemainingDurationString(acc.resetTime));
-                        } else {
-                        }
-                        setAccountGroupSelect(tool.id);
-                        setActiveModal({ type: 'manage-account', toolId: tool.id, accountId: acc.id });
-                      }}
-                    >
-                      <div className="account-info-side">
-                        <span className={`status-indicator-dot ${isDisabled ? 'disabled' : isActive ? 'active' : 'exhausted'}`}></span>
-                        <span className="account-name">{acc.name}</span>
-                        {!isDisabled && acc.resetTime && (
-                          <span className="reset-time-inline">
-                            - Resets {formatResetTime(acc.resetTime)} ({formatVerboseCountdown(acc.resetTime, currentTime)})
-                          </span>
-                        )}
-                        {acc.dueDate && !acc.noDue && (
-                          <span className={`due-badge ${dueBadgeClass}`}>
-                            {formatDueDateDisplay(acc.dueDate)}{acc.dueAmount != null ? ` · ₫${formatAmountInput(acc.dueAmount)}` : ''}{acc.dueNote ? ` · ${acc.dueNote}` : ''}
-                          </span>
-                        )}
-                      </div>
-
-                      {!isDisabled && acc.resetTime && (() => {
-                        const { daysPercent, hoursPercent } = calculateBarPercentages(acc.resetTime, currentTime);
-                        return (
-                          <div className="reset-bar-container" title={`Remaining: ${Math.floor((acc.resetTime - currentTime) / (1000 * 60 * 60))}h`}>
-                            <div className="reset-bar-fill days-fill" style={{ right: `${hoursPercent}%`, width: `${daysPercent}%` }}></div>
-                            <div className="reset-bar-fill hours-fill" style={{ right: 0, width: `${hoursPercent}%` }}></div>
-                            <div className="reset-bar-grid-line" style={{ left: '12.5%' }}></div>
-                            <div className="reset-bar-grid-line" style={{ left: '25%' }}></div>
-                            <div className="reset-bar-grid-line" style={{ left: '37.5%' }}></div>
-                            <div className="reset-bar-grid-line" style={{ left: '50%' }}></div>
-                            <div className="reset-bar-grid-line" style={{ left: '62.5%' }}></div>
-                            <div className="reset-bar-grid-line" style={{ left: '75%' }}></div>
-                            <div className="reset-bar-grid-line" style={{ left: '87.5%' }}></div>
-                          </div>
-                        );
-                      })()}
+                return (
+                  <div
+                    key={acc.id}
+                    className={`account-card ${isDisabled ? 'disabled' : isActive ? 'active' : 'exhausted'}`}
+                    onClick={() => {
+                      setAccountRenameText(acc.name);
+                      setLoginHintInput(acc.loginHint || '');
+                      setDueDateInput(acc.dueDate ? formatDueDateInput(acc.dueDate) : '');
+                      setDueAmountInput(acc.dueAmount != null ? formatAmountInput(acc.dueAmount) : '');
+                      setDueNoteInput(acc.dueNote || '');
+                      setNoDue(acc.noDue ?? !acc.dueDate);
+                      if (!isDisabled && acc.resetTime && acc.resetTime > Date.now()) {
+                        setCustomResetInput(getRemainingDurationString(acc.resetTime));
+                      } else {
+                      }
+                      setAccountGroupSelect(tool.id);
+                      setActiveModal({ type: 'manage-account', toolId: tool.id, accountId: acc.id });
+                    }}
+                  >
+                    <div className="account-info-side">
+                      <span className={`status-indicator-dot ${isDisabled ? 'disabled' : isActive ? 'active' : 'exhausted'}`}></span>
+                      <span className="account-name">{acc.name}</span>
+                      {!isDisabled && acc.resetTime && (
+                        <span className="reset-time-inline">
+                          - Resets {formatResetTime(acc.resetTime)} ({formatVerboseCountdown(acc.resetTime, currentTime)})
+                        </span>
+                      )}
+                      {acc.dueDate && !acc.noDue && (
+                        <span className={`due-badge ${dueBadgeClass}`}>
+                          {formatDueDateDisplay(acc.dueDate)}{acc.dueAmount != null ? ` · ₫${formatAmountInput(acc.dueAmount)}` : ''}{acc.dueNote ? ` · ${acc.dueNote}` : ''}
+                        </span>
+                      )}
                     </div>
-                  );
-                })}
 
-
+                    {!isDisabled && acc.resetTime && (() => {
+                      const { daysPercent, hoursPercent } = calculateBarPercentages(acc.resetTime, currentTime);
+                      return (
+                        <div className="reset-bar-container" title={`Remaining: ${Math.floor((acc.resetTime - currentTime) / (1000 * 60 * 60))}h`}>
+                          <div className="reset-bar-fill days-fill" style={{ right: `${hoursPercent}%`, width: `${daysPercent}%` }}></div>
+                          <div className="reset-bar-fill hours-fill" style={{ right: 0, width: `${hoursPercent}%` }}></div>
+                          <div className="reset-bar-grid-line" style={{ left: '12.5%' }}></div>
+                          <div className="reset-bar-grid-line" style={{ left: '25%' }}></div>
+                          <div className="reset-bar-grid-line" style={{ left: '37.5%' }}></div>
+                          <div className="reset-bar-grid-line" style={{ left: '50%' }}></div>
+                          <div className="reset-bar-grid-line" style={{ left: '62.5%' }}></div>
+                          <div className="reset-bar-grid-line" style={{ left: '75%' }}></div>
+                          <div className="reset-bar-grid-line" style={{ left: '87.5%' }}></div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
