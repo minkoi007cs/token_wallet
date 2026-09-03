@@ -12,7 +12,7 @@ export interface PaymentScheduleItem {
   recurrence: 'monthly' | 'yearly' | 'weekly' | 'daily' | 'one-time';
   repeatCount?: number | null; // total iterations to repeat, null = infinite
   completedCount: number; // how many cycles already paid
-  status: 'active' | 'paused' | 'completed';
+  status: 'active' | 'paused' | 'pending_card_removal' | 'completed';
   note?: string;
   category?: string;
   lastPaymentDate?: number;
@@ -289,10 +289,18 @@ export default function PaymentSchedule() {
         ...s,
         completedCount: nextCompleted,
         dueDate: isFinished ? s.dueDate : nextDueDate,
-        status: isFinished ? 'completed' : s.status,
+        status: isFinished ? 'pending_card_removal' : s.status,
         lastPaymentDate: Date.now(),
         updatedAt: Date.now()
       };
+    }));
+  };
+
+  // Quick Action: Confirm Card Removed
+  const handleConfirmCardRemoved = (id: string) => {
+    setSchedules(prev => prev.map(s => {
+      if (s.id !== id) return s;
+      return { ...s, status: 'completed', updatedAt: Date.now() };
     }));
   };
 
@@ -387,9 +395,12 @@ export default function PaymentSchedule() {
   };
 
   // Calculate Days Remaining & Urgency
-  const getDueStatus = (dueDate: number, status: 'active' | 'paused' | 'completed') => {
+  const getDueStatus = (dueDate: number, status: 'active' | 'paused' | 'pending_card_removal' | 'completed') => {
     if (status === 'completed') {
       return { type: 'completed', label: 'Đã hoàn tất', daysLeft: 0, badgeClass: 'due-badge due-ok' };
+    }
+    if (status === 'pending_card_removal') {
+      return { type: 'pending_card_removal', label: '⚠️ Chờ xóa thẻ', daysLeft: 0, badgeClass: 'due-badge due-soon' };
     }
     if (status === 'paused') {
       return { type: 'paused', label: 'Tạm dừng', daysLeft: 0, badgeClass: 'due-badge' };
@@ -802,126 +813,84 @@ export default function PaymentSchedule() {
           </button>
         </div>
       ) : (
-        <div className="pay-cards-grid">
+        <div className="pay-compact-list">
           {filteredSchedules.map(item => {
             const dueInfo = getDueStatus(item.dueDate, item.status);
             const totalRep = item.repeatCount;
-            const remainingRep = totalRep !== null && totalRep !== undefined ? Math.max(0, totalRep - item.completedCount) : null;
-            const progressPercent = totalRep ? Math.min(100, Math.round((item.completedCount / totalRep) * 100)) : 100;
 
             return (
-              <div key={item.id} className={`pay-card ${item.status === 'paused' ? 'is-paused' : ''} ${item.status === 'completed' ? 'is-completed' : ''}`}>
-                {/* Card Header: Icon, Title & Urgency Badge */}
-                <div className="pay-card-header">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden' }}>
-                    <div className="pay-card-icon-box">
-                      {getBrandIcon(item.title, item.category)}
-                    </div>
-                    <div style={{ overflow: 'hidden' }}>
-                      <h3 className="pay-card-title" title={item.title}>
-                        {item.title}
-                      </h3>
+              <div
+                key={item.id}
+                className={`pay-compact-item ${item.status === 'paused' ? 'is-paused' : ''} ${item.status === 'completed' ? 'is-completed' : ''} ${item.status === 'pending_card_removal' ? 'is-pending-removal' : ''}`}
+              >
+                {/* Left: Icon, Title, Email & Due info */}
+                <div className="pay-compact-left">
+                  <div className="pay-compact-icon">
+                    {getBrandIcon(item.title, item.category)}
+                  </div>
+                  <div className="pay-compact-info">
+                    <div className="pay-compact-title-line">
+                      <span className="pay-compact-title" title={item.title}>{item.title}</span>
                       {item.accountEmail && (
-                        <div className="pay-card-email" title={item.accountEmail}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                            <polyline points="22,6 12,13 2,6" />
-                          </svg>
-                          <span>{item.accountEmail}</span>
-                        </div>
+                        <span className="pay-compact-email">{item.accountEmail}</span>
+                      )}
+                      <span className={dueInfo.badgeClass}>{dueInfo.label}</span>
+                    </div>
+
+                    <div className="pay-compact-sub-line">
+                      <span>Đến hạn: <strong>{formatDateDisplay(item.dueDate)}</strong></span>
+                      <span>•</span>
+                      <span>{getRecurrenceLabel(item.recurrence)}</span>
+                      <span>•</span>
+                      <span>{totalRep !== null && totalRep !== undefined ? `Đã đóng ${item.completedCount}/${totalRep} kỳ` : `Đã đóng ${item.completedCount} kỳ`}</span>
+                      {item.note && (
+                        <>
+                          <span>•</span>
+                          <span className="pay-compact-note">{item.note}</span>
+                        </>
                       )}
                     </div>
                   </div>
-
-                  <span className={dueInfo.badgeClass}>
-                    {dueInfo.label}
-                  </span>
                 </div>
 
-                {/* Card Middle: Due Date & Amount */}
-                <div className="pay-card-body">
-                  <div className="pay-card-meta-row">
-                    <div>
-                      <span className="pay-meta-label">Ngày đến hạn</span>
-                      <div className="pay-meta-val-date">
-                        {formatDateDisplay(item.dueDate)}
-                      </div>
-                    </div>
-
-                    <div style={{ textAlign: 'right' }}>
-                      <span className="pay-meta-label">Số tiền</span>
-                      <div className="pay-meta-val-amount">
-                        {formatMoney(item.amount, item.currency)}
-                      </div>
-                    </div>
+                {/* Right: Amount & Quick Actions */}
+                <div className="pay-compact-right">
+                  <div className="pay-compact-amount">
+                    {formatMoney(item.amount, item.currency)}
                   </div>
 
-                  {/* Recurrence & Repetitions Progress */}
-                  <div className="pay-progress-section">
-                    <div className="pay-progress-header">
-                      <span>
-                        🔄 {getRecurrenceLabel(item.recurrence)}
-                      </span>
-                      <span>
-                        {totalRep !== null && totalRep !== undefined ? (
-                          <>Đã đóng: <strong>{item.completedCount}/{totalRep} kỳ</strong> {remainingRep !== null && remainingRep > 0 ? `(Còn ${remainingRep})` : '(Đã xong)'}</>
-                        ) : (
-                          <>Lặp lại vô hạn • Đã qua <strong>{item.completedCount} kỳ</strong></>
-                        )}
-                      </span>
-                    </div>
-
-                    {totalRep !== null && totalRep !== undefined && (
-                      <div className="pay-progress-bar-track">
-                        <div
-                          className="pay-progress-bar-fill"
-                          style={{
-                            width: `${progressPercent}%`,
-                            backgroundColor: progressPercent === 100 ? '#10b981' : 'var(--color-accent)'
-                          }}
-                        />
-                      </div>
+                  <div className="pay-compact-actions">
+                    {item.status === 'pending_card_removal' ? (
+                      <button
+                        className="btn pay-action-removal-btn"
+                        onClick={() => handleConfirmCardRemoved(item.id)}
+                        title="Đã hoàn tất các kỳ. Bấm xác nhận sau khi đã gỡ thẻ khỏi tài khoản dịch vụ"
+                      >
+                        ⚠️ Xác nhận đã xóa thẻ
+                      </button>
+                    ) : item.status === 'completed' ? (
+                      <span className="pay-completed-tag">✓ Đã xong</span>
+                    ) : (
+                      <button
+                        className="btn pay-action-paid-btn"
+                        onClick={() => handleMarkAsPaid(item)}
+                        title="Đã thanh toán kỳ này (Dời sang kỳ sau)"
+                      >
+                        ✓ Đã thanh toán
+                      </button>
                     )}
-                  </div>
 
-                  {item.note && (
-                    <div className="pay-card-note">
-                      📝 {item.note}
-                    </div>
-                  )}
-                </div>
-
-                {/* Card Actions */}
-                <div className="pay-card-actions">
-                  {item.status !== 'completed' ? (
-                    <button
-                      className="btn btn-primary pay-action-paid-btn"
-                      onClick={() => handleMarkAsPaid(item)}
-                      title="Đã thanh toán kỳ này (Tự động dời ngày sang kỳ tiếp theo)"
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Đã thanh toán
-                    </button>
-                  ) : (
-                    <div style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      ✓ Đã hoàn tất tất cả các kỳ
-                    </div>
-                  )}
-
-                  <div style={{ display: 'flex', gap: '0.4rem' }}>
                     <button
                       className="pay-icon-btn"
                       onClick={() => handleTogglePause(item)}
-                      title={item.status === 'paused' ? 'Kích hoạt lại theo dõi' : 'Tạm dừng theo dõi'}
+                      title={item.status === 'paused' ? 'Tiếp tục theo dõi' : 'Tạm dừng'}
                     >
                       {item.status === 'paused' ? (
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.2">
                           <polygon points="5 3 19 12 5 21 5 3" />
                         </svg>
                       ) : (
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                           <rect x="6" y="4" width="4" height="16" />
                           <rect x="14" y="4" width="4" height="16" />
                         </svg>
@@ -931,9 +900,9 @@ export default function PaymentSchedule() {
                     <button
                       className="pay-icon-btn"
                       onClick={() => handleOpenEditModal(item)}
-                      title="Chỉnh sửa thông tin"
+                      title="Sửa"
                     >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                       </svg>
@@ -942,9 +911,9 @@ export default function PaymentSchedule() {
                     <button
                       className="pay-icon-btn pay-icon-btn-danger"
                       onClick={() => handleDeleteItem(item.id)}
-                      title="Xóa lịch này"
+                      title="Xóa"
                     >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
                         <polyline points="3 6 5 6 21 6" />
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                       </svg>
