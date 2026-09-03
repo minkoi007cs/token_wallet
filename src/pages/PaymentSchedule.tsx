@@ -957,49 +957,53 @@ export default function PaymentSchedule() {
         </div>
       )}
 
-      {/* ── DETAIL / EDIT MODAL ── */}
+      {/* ── DETAIL / EDIT MODAL (ULTRA-SIMPLE & SLEEK) ── */}
       {modalItem && (
         <div className="modal-overlay" onClick={() => setModalItem(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '580px' }}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
             <div className="modal-header">
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>
-                {modalItem === 'NEW' ? 'Thêm Lịch Thanh Toán Mới' : 'Chỉnh Sửa Lịch Thanh Toán'}
-              </h3>
-              <button className="modal-close" onClick={() => setModalItem(null)}>✕</button>
+              <h3>{modalItem === 'NEW' ? 'Thêm Lịch Thanh Toán' : 'Chỉnh Sửa Lịch Thanh Toán'}</h3>
+              <button className="modal-close" onClick={() => setModalItem(null)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
 
-            <div className="modal-body">
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.25rem 1.5rem' }}>
               {/* Service Title */}
-              <div className="form-group">
-                <label className="form-label">Tên Dịch Vụ / Khoản Thanh Toán *</label>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>Tên Dịch Vụ / Gói Đăng Ký *</label>
                 <input
                   type="text"
-                  className="form-input"
-                  placeholder="Ví dụ: Gemini Advanced Account, Claude Pro, VPS Vultr..."
+                  className="input-text"
+                  placeholder="VD: Gemini Advanced, Claude Pro, VPS Vultr..."
                   value={modalForm.title || ''}
                   onChange={(e) => setModalForm(prev => ({ ...prev, title: e.target.value }))}
+                  autoFocus
                 />
               </div>
 
               {/* Account Email */}
-              <div className="form-group">
-                <label className="form-label">Tài Khoản / Email Liên Kết</label>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>Tài Khoản / Email Liên Kết</label>
                 <input
-                  type="email"
-                  className="form-input"
-                  placeholder="Ví dụ: khoang4@kent.edu"
+                  type="text"
+                  className="input-text"
+                  placeholder="VD: khoang4@kent.edu, dev@mikoi.org..."
                   value={modalForm.accountEmail || ''}
                   onChange={(e) => setModalForm(prev => ({ ...prev, accountEmail: e.target.value }))}
                 />
               </div>
 
               {/* Due Date & Recurrence Row */}
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label className="form-label">Ngày Đến Hạn Kỳ Này *</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Ngày Đến Hạn *</label>
                   <input
                     type="date"
-                    className="form-input"
+                    className="input-text"
                     value={modalForm.dueDate ? new Date(modalForm.dueDate).toISOString().split('T')[0] : ''}
                     onChange={(e) => {
                       const d = new Date(e.target.value);
@@ -1010,39 +1014,38 @@ export default function PaymentSchedule() {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Chu Kỳ Lặp Lại</label>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Chu Kỳ Lặp Lại</label>
                   <select
-                    className="form-input"
+                    className="input-select"
                     value={modalForm.recurrence || 'monthly'}
                     onChange={(e) => setModalForm(prev => ({ ...prev, recurrence: e.target.value as any }))}
                   >
-                    <option value="monthly">Hàng tháng (Monthly)</option>
-                    <option value="yearly">Hàng năm (Yearly)</option>
-                    <option value="weekly">Hàng tuần (Weekly)</option>
-                    <option value="daily">Hàng ngày (Daily)</option>
-                    <option value="one-time">Một lần duy nhất (One-time)</option>
+                    <option value="monthly">Hàng tháng</option>
+                    <option value="yearly">Hàng năm</option>
+                    <option value="weekly">Hàng tuần</option>
+                    <option value="one-time">Một lần (Không lặp)</option>
                   </select>
                 </div>
               </div>
 
-              {/* Amount & Currency */}
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label className="form-label">Số Tiền</label>
+              {/* Amount & Currency & Repeat Count Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 1fr', gap: '0.75rem' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Số Tiền</label>
                   <input
                     type="number"
-                    className="form-input"
-                    placeholder="Ví dụ: 500000 hoặc 20"
+                    className="input-text"
+                    placeholder="VD: 500000"
                     value={modalForm.amount || ''}
                     onChange={(e) => setModalForm(prev => ({ ...prev, amount: e.target.value ? Number(e.target.value) : undefined }))}
                   />
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Loại Tiền Tệ</label>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Đơn Vị</label>
                   <select
-                    className="form-input"
+                    className="input-select"
                     value={modalForm.currency || 'VND'}
                     onChange={(e) => setModalForm(prev => ({ ...prev, currency: e.target.value as any }))}
                   >
@@ -1050,16 +1053,13 @@ export default function PaymentSchedule() {
                     <option value="USD">USD ($)</option>
                   </select>
                 </div>
-              </div>
 
-              {/* Repeat Count & Completed Count */}
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label className="form-label">Tổng Số Lần Lặp (Để trống nếu vô hạn)</label>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Số Lần Lặp</label>
                   <input
                     type="number"
-                    className="form-input"
-                    placeholder="Ví dụ: 12 (kỳ)"
+                    className="input-text"
+                    placeholder="Vô hạn"
                     value={modalForm.repeatCount === null || modalForm.repeatCount === undefined ? '' : modalForm.repeatCount}
                     onChange={(e) => setModalForm(prev => ({
                       ...prev,
@@ -1067,59 +1067,15 @@ export default function PaymentSchedule() {
                     }))}
                   />
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Số Kỳ Đã Thanh Toán</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={modalForm.completedCount || 0}
-                    onChange={(e) => setModalForm(prev => ({
-                      ...prev,
-                      completedCount: Math.max(0, parseInt(e.target.value || '0', 10))
-                    }))}
-                  />
-                </div>
               </div>
 
-              {/* Status & Category */}
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label className="form-label">Trạng Thái</label>
-                  <select
-                    className="form-input"
-                    value={modalForm.status || 'active'}
-                    onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value as any }))}
-                  >
-                    <option value="active">Đang theo dõi (Active)</option>
-                    <option value="paused">Tạm dừng (Paused)</option>
-                    <option value="completed">Đã hoàn tất (Completed)</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Nhóm Dịch Vụ</label>
-                  <select
-                    className="form-input"
-                    value={modalForm.category || 'AI Tool'}
-                    onChange={(e) => setModalForm(prev => ({ ...prev, category: e.target.value }))}
-                  >
-                    <option value="AI Tool">AI Tool & API</option>
-                    <option value="Cloud & Hosting">Cloud & Hosting</option>
-                    <option value="Software & Apps">Phần mềm & Ứng dụng</option>
-                    <option value="Entertainment">Giải trí & Streaming</option>
-                    <option value="Other">Khác</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Note */}
-              <div className="form-group">
-                <label className="form-label">Ghi Chú Bổ Sung</label>
-                <textarea
-                  className="form-input"
-                  rows={2}
-                  placeholder="Ghi chú thẻ thanh toán, cách đăng nhập, ngày gia hạn..."
+              {/* Optional Note */}
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>Ghi Chú (Tùy chọn)</label>
+                <input
+                  type="text"
+                  className="input-text"
+                  placeholder="VD: Gói Ultra trường Kent, thẻ Visa thanh toán..."
                   value={modalForm.note || ''}
                   onChange={(e) => setModalForm(prev => ({ ...prev, note: e.target.value }))}
                 />
@@ -1131,15 +1087,16 @@ export default function PaymentSchedule() {
                 <button
                   type="button"
                   className="btn btn-danger"
+                  style={{ padding: '0.5rem 1rem' }}
                   onClick={() => handleDeleteItem((modalItem as PaymentScheduleItem).id)}
                 >
-                  Xóa Lịch
+                  Xóa
                 </button>
               ) : <div />}
 
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', gap: '0.6rem' }}>
                 <button type="button" className="btn" onClick={() => setModalItem(null)}>
-                  Hủy Bỏ
+                  Hủy
                 </button>
                 <button
                   type="button"
@@ -1147,7 +1104,7 @@ export default function PaymentSchedule() {
                   onClick={handleSaveModal}
                   disabled={!modalForm.title?.trim()}
                 >
-                  Lưu Thông Tin
+                  Lưu
                 </button>
               </div>
             </div>
