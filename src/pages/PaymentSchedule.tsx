@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../utils/supabaseClient';
-import { parsePaymentScheduleText, calculateNextDueDate, ParsedPaymentInfo } from '../utils/paymentParser';
+import { parsePaymentScheduleText, calculateNextDueDate, type ParsedPaymentInfo } from '../utils/paymentParser';
 
 export interface PaymentScheduleItem {
   id: string;
@@ -143,7 +143,6 @@ export default function PaymentSchedule() {
 
   // Quick Smart Input State
   const [quickInputText, setQuickInputText] = useState('');
-  const [isQuickInputActive, setIsQuickInputActive] = useState(false);
 
   // Modal State
   const [modalItem, setModalItem] = useState<PaymentScheduleItem | null | 'NEW'>(null);
@@ -276,7 +275,6 @@ export default function PaymentSchedule() {
 
     setSchedules(prev => [newItem, ...prev]);
     setQuickInputText('');
-    setIsQuickInputActive(false);
   };
 
   // Quick Action: Mark as Paid for this cycle
@@ -651,10 +649,7 @@ export default function PaymentSchedule() {
             className="pay-quick-input-field"
             placeholder="Ví dụ: thanh toán Gemini account cho khoang4@kent.edu vào ngày 15/09/2026, lặp lại hàng tháng, 12 lần, 500k"
             value={quickInputText}
-            onChange={(e) => {
-              setQuickInputText(e.target.value);
-              setIsQuickInputActive(true);
-            }}
+            onChange={(e) => setQuickInputText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && parsedPreview.title.trim()) {
                 handleQuickAdd();
