@@ -36,6 +36,12 @@ export default function Layout() {
             >
               App Wallet
             </NavLink>
+            <NavLink
+              to="/payments"
+              className={({ isActive }) => `tab-btn ${isActive ? 'active' : ''}`}
+            >
+              Hạn thanh toán
+            </NavLink>
           </div>
         </div>
         <div className="header-actions">
