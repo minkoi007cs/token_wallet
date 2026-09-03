@@ -565,112 +565,95 @@ export default function PaymentSchedule() {
 
   return (
     <div className="payment-schedule-page" style={{ maxWidth: '1400px', margin: '0 auto' }}>
-      {/* ── TOP HEADER & SUMMARY METRICS ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-        <div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
+      {/* ── ALL-IN-ONE UNIFIED HEADER BOX ── */}
+      <div className="pay-unified-box">
+        {/* Row 1: Global Status & Compact Metrics */}
+        <div className="pay-unified-top">
+          <div className="pay-unified-stats">
+            <div className="pay-pill">
+              <span className="pay-pill-dot active" />
+              <span className="pay-pill-label">Ước tính:</span>
+              <strong className="pay-pill-val" style={{ color: 'var(--color-accent)' }}>
+                {summaryMetrics.totalMonthlyVND > 0 && `${summaryMetrics.totalMonthlyVND.toLocaleString('vi-VN')} ₫`}
+                {summaryMetrics.totalMonthlyVND > 0 && summaryMetrics.totalMonthlyUSD > 0 && ' + '}
+                {summaryMetrics.totalMonthlyUSD > 0 && `$${summaryMetrics.totalMonthlyUSD}`}
+                {summaryMetrics.totalMonthlyVND === 0 && summaryMetrics.totalMonthlyUSD === 0 && '0 ₫'}
+              </strong>
+              <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>/tháng</span>
+            </div>
+
+            <div className="pay-pill">
+              <span className="pay-pill-dot" style={{ backgroundColor: summaryMetrics.dueSoonCount > 0 ? '#facc15' : '#64748b' }} />
+              <span className="pay-pill-label">Sắp đến hạn:</span>
+              <strong style={{ color: summaryMetrics.dueSoonCount > 0 ? '#facc15' : 'inherit' }}>
+                {summaryMetrics.dueSoonCount}
+              </strong>
+            </div>
+
+            <div className="pay-pill">
+              <span className="pay-pill-dot" style={{ backgroundColor: summaryMetrics.overdueCount > 0 ? '#f87171' : '#64748b' }} />
+              <span className="pay-pill-label">Quá hạn:</span>
+              <strong style={{ color: summaryMetrics.overdueCount > 0 ? '#f87171' : 'inherit' }}>
+                {summaryMetrics.overdueCount}
+              </strong>
+            </div>
+
+            <div className="pay-pill">
+              <span className="pay-pill-dot active" />
+              <span className="pay-pill-label">Theo dõi:</span>
+              <strong>{summaryMetrics.activeCount}/{summaryMetrics.total}</strong>
+            </div>
+          </div>
+
+          <button className="btn btn-primary" style={{ padding: '0.35rem 0.8rem', fontSize: '0.8rem' }} onClick={() => handleOpenEditModal()}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Quản Lý Hạn Thanh Toán
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.2rem' }}>
-            Theo dõi chu kỳ gia hạn gói Gemini, Claude, Copilot, Cloud Server và các dịch vụ định kỳ.
-          </p>
+            + Form chi tiết
+          </button>
         </div>
 
-        <button className="btn btn-primary" onClick={() => handleOpenEditModal()}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Thêm Lịch Mới
-        </button>
-      </div>
-
-      {/* ── SUMMARY STATS BAR ── */}
-      <div className="pay-summary-grid">
-        <div className="pay-stat-card">
-          <span className="pay-stat-label">Ước tính mỗi tháng</span>
-          <div className="pay-stat-value" style={{ color: 'var(--color-accent)' }}>
-            {summaryMetrics.totalMonthlyVND > 0 && `${summaryMetrics.totalMonthlyVND.toLocaleString('vi-VN')} ₫`}
-            {summaryMetrics.totalMonthlyVND > 0 && summaryMetrics.totalMonthlyUSD > 0 && ' + '}
-            {summaryMetrics.totalMonthlyUSD > 0 && `$${summaryMetrics.totalMonthlyUSD}`}
-            {summaryMetrics.totalMonthlyVND === 0 && summaryMetrics.totalMonthlyUSD === 0 && '0 ₫'}
+        {/* Row 2: Natural Language Quick Input */}
+        <div className="pay-unified-input-row">
+          <div className="search-input-wrapper" style={{ flex: 1, minHeight: '42px' }}>
+            <span className="search-icon" style={{ color: 'var(--color-accent)' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+              </svg>
+            </span>
+            <input
+              type="text"
+              className="search-input-field"
+              placeholder="Ví dụ: thanh toán Gemini account cho khoang4@kent.edu vào ngày 15/09/2026, lặp lại hàng tháng, 12 lần, 500k"
+              value={quickInputText}
+              onChange={(e) => setQuickInputText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && parsedPreview.title.trim()) {
+                  handleQuickAdd();
+                }
+              }}
+            />
+            {quickInputText && (
+              <button className="search-clear-btn" onClick={() => setQuickInputText('')} title="Xóa">✕</button>
+            )}
           </div>
-          <span className="pay-stat-sub">Tổng chi phí định kỳ</span>
-        </div>
-
-        <div className="pay-stat-card">
-          <span className="pay-stat-label">Sắp đến hạn</span>
-          <div className="pay-stat-value" style={{ color: summaryMetrics.dueSoonCount > 0 ? '#facc15' : 'var(--text-main)' }}>
-            {summaryMetrics.dueSoonCount}
-          </div>
-          <span className="pay-stat-sub">Trong vòng 7 ngày tới</span>
-        </div>
-
-        <div className="pay-stat-card">
-          <span className="pay-stat-label">Quá hạn</span>
-          <div className="pay-stat-value" style={{ color: summaryMetrics.overdueCount > 0 ? '#f87171' : 'var(--text-main)' }}>
-            {summaryMetrics.overdueCount}
-          </div>
-          <span className="pay-stat-sub">{summaryMetrics.overdueCount > 0 ? 'Cần thanh toán ngay' : 'Không có khoản nợ'}</span>
-        </div>
-
-        <div className="pay-stat-card">
-          <span className="pay-stat-label">Đang theo dõi</span>
-          <div className="pay-stat-value" style={{ color: '#10b981' }}>
-            {summaryMetrics.activeCount} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>/ {summaryMetrics.total}</span>
-          </div>
-          <span className="pay-stat-sub">Dịch vụ & tài khoản</span>
-        </div>
-      </div>
-
-      {/* ── ULTRA-SIMPLE SMART QUICK INPUT BAR ── */}
-      <div className="pay-quick-entry-box">
-        <div className="pay-quick-entry-header">
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600, fontSize: '0.92rem' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-            </svg>
-            Nhập nhanh thông minh (Gõ tự nhiên không cần form)
-          </span>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Tự động nhận diện Tên, Email, Ngày đến hạn, Chu kỳ, Số lần & Số tiền
-          </span>
-        </div>
-
-        <div className="pay-quick-input-row">
-          <input
-            type="text"
-            className="pay-quick-input-field"
-            placeholder="Ví dụ: thanh toán Gemini account cho khoang4@kent.edu vào ngày 15/09/2026, lặp lại hàng tháng, 12 lần, 500k"
-            value={quickInputText}
-            onChange={(e) => setQuickInputText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && parsedPreview.title.trim()) {
-                handleQuickAdd();
-              }
-            }}
-          />
           <button
-            className="btn btn-primary pay-quick-submit-btn"
+            className="btn btn-primary"
+            style={{ height: '42px', padding: '0 1.25rem', whiteSpace: 'nowrap' }}
             onClick={handleQuickAdd}
             disabled={!parsedPreview.title.trim() && !quickInputText.trim()}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
             Thêm ngay
           </button>
         </div>
 
-        {/* Dynamic Live Chips Breakdown */}
+        {/* Dynamic Live Chips Breakdown OR Sample Chips */}
         {quickInputText.trim() ? (
-          <div className="pay-live-preview-chips">
+          <div className="pay-live-preview-chips" style={{ margin: '0.5rem 0 0', paddingTop: '0.5rem' }}>
             <span className="pay-chip-badge">
               🏷️ Dịch vụ: <strong>{parsedPreview.title || 'Chưa nhận diện'}</strong>
             </span>
@@ -686,7 +669,7 @@ export default function PaymentSchedule() {
               🔄 Chu kỳ: <strong>{getRecurrenceLabel(parsedPreview.recurrence)}</strong>
             </span>
             <span className="pay-chip-badge pay-chip-count">
-              🔢 Lặp lại: <strong>{parsedPreview.repeatCount ? `${parsedPreview.repeatCount} lần` : 'Vô hạn (liên tục)'}</strong>
+              🔢 Lặp lại: <strong>{parsedPreview.repeatCount ? `${parsedPreview.repeatCount} lần` : 'Vô hạn'}</strong>
             </span>
             {parsedPreview.amount && (
               <span className="pay-chip-badge pay-chip-amount">
@@ -695,8 +678,8 @@ export default function PaymentSchedule() {
             )}
           </div>
         ) : (
-          <div className="pay-quick-samples-row">
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Thử nhanh mẫu:</span>
+          <div className="pay-quick-samples-row" style={{ margin: '0.45rem 0 0' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Mẫu thử:</span>
             <button
               type="button"
               className="pay-sample-chip"
@@ -720,87 +703,85 @@ export default function PaymentSchedule() {
             </button>
           </div>
         )}
-      </div>
 
-      {/* ── TOOLBAR: SEARCH, FILTERS & SORT ── */}
-      <div className="pay-toolbar-row">
-        {/* Search */}
-        <div className="search-input-wrapper" style={{ flex: '1 1 300px' }}>
-          <span className="search-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </span>
-          <input
-            type="text"
-            className="search-input-field"
-            placeholder="Tìm theo tên dịch vụ, email tài khoản, ghi chú..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          {searchQuery && (
-            <button className="search-clear-btn" onClick={() => setSearchQuery('')} title="Xóa tìm kiếm">
-              ✕
-            </button>
-          )}
+        {/* Row 3: Integrated Search & Filters inside the box */}
+        <div className="pay-unified-filters">
+          <div className="search-input-wrapper" style={{ flex: '1 1 200px' }}>
+            <span className="search-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </span>
+            <input
+              type="text"
+              className="search-input-field"
+              style={{ padding: '0.4rem 0.8rem 0.4rem 2.1rem', fontSize: '0.84rem' }}
+              placeholder="Lọc nhanh danh sách..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button className="search-clear-btn" onClick={() => setSearchQuery('')}>✕</button>
+            )}
+          </div>
+
+          <select
+            className={`toolbar-select ${statusFilter !== 'ALL' ? 'active-filter' : ''}`}
+            style={{ padding: '0.4rem 0.75rem', fontSize: '0.82rem' }}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+          >
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="ACTIVE">Đang theo dõi</option>
+            <option value="DUE_SOON">Sắp đến hạn (≤ 7 ngày)</option>
+            <option value="OVERDUE">Quá hạn</option>
+            <option value="PAUSED">Tạm dừng</option>
+            <option value="COMPLETED">Đã hoàn tất</option>
+          </select>
+
+          <select
+            className={`toolbar-select ${recurrenceFilter !== 'ALL' ? 'active-filter' : ''}`}
+            style={{ padding: '0.4rem 0.75rem', fontSize: '0.82rem' }}
+            value={recurrenceFilter}
+            onChange={(e) => setRecurrenceFilter(e.target.value)}
+          >
+            <option value="ALL">Tất cả chu kỳ</option>
+            <option value="monthly">Hàng tháng</option>
+            <option value="yearly">Hàng năm</option>
+            <option value="weekly">Hàng tuần</option>
+            <option value="one-time">Một lần</option>
+          </select>
+
+          <select
+            className="toolbar-select"
+            style={{ padding: '0.4rem 0.75rem', fontSize: '0.82rem' }}
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+          >
+            <option value="dueDate">Ngày đến hạn</option>
+            <option value="title">Tên A-Z</option>
+            <option value="amount">Số tiền</option>
+            <option value="remaining">Số lần còn</option>
+          </select>
+
+          <button
+            className="sort-direction-btn"
+            style={{ padding: '0.4rem 0.6rem' }}
+            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+            title={sortOrder === 'asc' ? 'Tăng dần. Bấm đổi sang giảm dần' : 'Giảm dần. Bấm đổi sang tăng dần'}
+          >
+            {sortOrder === 'asc' ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 5v14M19 12l-7-7-7 7" />
+              </svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 19V5M5 12l7 7 7-7" />
+              </svg>
+            )}
+          </button>
         </div>
-
-        {/* Filter by Status */}
-        <select
-          className={`toolbar-select ${statusFilter !== 'ALL' ? 'active-filter' : ''}`}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as any)}
-        >
-          <option value="ALL">Tất cả trạng thái</option>
-          <option value="ACTIVE">Đang theo dõi (Active)</option>
-          <option value="DUE_SOON">Sắp đến hạn (≤ 7 ngày)</option>
-          <option value="OVERDUE">Quá hạn thanh toán</option>
-          <option value="PAUSED">Tạm dừng</option>
-          <option value="COMPLETED">Đã hoàn thành</option>
-        </select>
-
-        {/* Filter by Recurrence */}
-        <select
-          className={`toolbar-select ${recurrenceFilter !== 'ALL' ? 'active-filter' : ''}`}
-          value={recurrenceFilter}
-          onChange={(e) => setRecurrenceFilter(e.target.value)}
-        >
-          <option value="ALL">Tất cả chu kỳ</option>
-          <option value="monthly">Hàng tháng</option>
-          <option value="yearly">Hàng năm</option>
-          <option value="weekly">Hàng tuần</option>
-          <option value="one-time">Một lần</option>
-        </select>
-
-        {/* Sort By */}
-        <select
-          className="toolbar-select"
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as any)}
-        >
-          <option value="dueDate">Sắp xếp: Ngày đến hạn</option>
-          <option value="title">Sắp xếp: Tên A-Z</option>
-          <option value="amount">Sắp xếp: Số tiền</option>
-          <option value="remaining">Sắp xếp: Số lần còn lại</option>
-        </select>
-
-        {/* Sort Direction */}
-        <button
-          className="sort-direction-btn"
-          onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-          title={sortOrder === 'asc' ? 'Tăng dần. Bấm để đổi sang giảm dần' : 'Giảm dần. Bấm để đổi sang tăng dần'}
-        >
-          {sortOrder === 'asc' ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5v14M19 12l-7-7-7 7" />
-            </svg>
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 19V5M5 12l7 7 7-7" />
-            </svg>
-          )}
-        </button>
       </div>
 
       {/* ── SCHEDULES CARDS GRID ── */}
