@@ -394,16 +394,16 @@ export default function PaymentSchedule() {
     setModalItem(null);
   };
 
-  // Calculate Days Remaining & Urgency
-  const getDueStatus = (dueDate: number, status: 'active' | 'paused' | 'pending_card_removal' | 'completed') => {
+  // Calculate Days Remaining & Urgency for Reminder
+  const getDueStatus = (dueDate: number, status: 'active' | 'paused' | 'pending_card_removal' | 'completed', currentCycleNum?: number) => {
     if (status === 'completed') {
-      return { type: 'completed', label: 'Đã hoàn tất', daysLeft: 0, badgeClass: 'due-badge due-ok' };
+      return { type: 'completed', label: '✓ Đã xong & đã xóa thẻ', daysLeft: 0, badgeClass: 'due-badge due-ok' };
     }
     if (status === 'pending_card_removal') {
-      return { type: 'pending_card_removal', label: '⚠️ Chờ xóa thẻ', daysLeft: 0, badgeClass: 'due-badge due-soon' };
+      return { type: 'pending_card_removal', label: '⚠️ Đã trả kỳ cuối - Hãy xóa thẻ!', daysLeft: 0, badgeClass: 'due-badge due-overdue' };
     }
     if (status === 'paused') {
-      return { type: 'paused', label: 'Tạm dừng', daysLeft: 0, badgeClass: 'due-badge' };
+      return { type: 'paused', label: 'Tạm dừng nhắc', daysLeft: 0, badgeClass: 'due-badge' };
     }
 
     const now = new Date();
@@ -412,11 +412,12 @@ export default function PaymentSchedule() {
     target.setHours(0, 0, 0, 0);
 
     const diffDays = Math.round((target.getTime() - now.getTime()) / 86400000);
+    const cycleSuffix = currentCycleNum ? ` (Kỳ ${currentCycleNum})` : '';
 
     if (diffDays < 0) {
       return {
         type: 'overdue',
-        label: `Quá hạn ${Math.abs(diffDays)} ngày`,
+        label: `Quá hạn ${Math.abs(diffDays)} ngày${cycleSuffix}`,
         daysLeft: diffDays,
         badgeClass: 'due-badge due-overdue'
       };
@@ -424,22 +425,22 @@ export default function PaymentSchedule() {
     if (diffDays === 0) {
       return {
         type: 'due_today',
-        label: 'Đến hạn hôm nay',
+        label: `Đến hạn hôm nay${cycleSuffix}`,
         daysLeft: 0,
         badgeClass: 'due-badge due-soon'
       };
     }
-    if (diffDays <= 5) {
+    if (diffDays <= 7) {
       return {
         type: 'due_soon',
-        label: `Còn ${diffDays} ngày`,
+        label: `Sắp đến: còn ${diffDays} ngày${cycleSuffix}`,
         daysLeft: diffDays,
         badgeClass: 'due-badge due-soon'
       };
     }
     return {
       type: 'normal',
-      label: `Còn ${diffDays} ngày`,
+      label: `Còn ${diffDays} ngày${cycleSuffix}`,
       daysLeft: diffDays,
       badgeClass: 'due-badge due-ok'
     };
@@ -480,6 +481,7 @@ export default function PaymentSchedule() {
     let activeCount = 0;
     let dueSoonCount = 0;
     let overdueCount = 0;
+    let pendingRemovalCount = 0;
     let totalMonthlyVND = 0;
     let totalMonthlyUSD = 0;
 
@@ -487,6 +489,9 @@ export default function PaymentSchedule() {
     now.setHours(0, 0, 0, 0);
 
     schedules.forEach(s => {
+      if (s.status === 'pending_card_removal') {
+        pendingRemovalCount++;
+      }
       if (s.status === 'active') {
         activeCount++;
 
@@ -520,6 +525,7 @@ export default function PaymentSchedule() {
       activeCount,
       dueSoonCount,
       overdueCount,
+      pendingRemovalCount,
       totalMonthlyVND: Math.round(totalMonthlyVND),
       totalMonthlyUSD: Math.round(totalMonthlyUSD * 10) / 10
     };
@@ -581,6 +587,14 @@ export default function PaymentSchedule() {
         {/* Row 1: Global Status & Compact Metrics */}
         <div className="pay-unified-top">
           <div className="pay-unified-stats">
+            {summaryMetrics.pendingRemovalCount > 0 && (
+              <div className="pay-pill" style={{ background: 'rgba(239, 68, 68, 0.15)', padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                <span className="pay-pill-dot" style={{ backgroundColor: '#ef4444' }} />
+                <span className="pay-pill-label" style={{ color: '#f87171', fontWeight: 600 }}>Cần gỡ thẻ ngay:</span>
+                <strong style={{ color: '#f87171' }}>{summaryMetrics.pendingRemovalCount} dịch vụ</strong>
+              </div>
+            )}
+
             <div className="pay-pill">
               <span className="pay-pill-dot active" />
               <span className="pay-pill-label">Ước tính:</span>
@@ -611,7 +625,7 @@ export default function PaymentSchedule() {
 
             <div className="pay-pill">
               <span className="pay-pill-dot active" />
-              <span className="pay-pill-label">Theo dõi:</span>
+              <span className="pay-pill-label">Đang nhắc:</span>
               <strong>{summaryMetrics.activeCount}/{summaryMetrics.total}</strong>
             </div>
           </div>
@@ -621,7 +635,7 @@ export default function PaymentSchedule() {
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            + Form chi tiết
+            + Tạo Nhắc Nhở Mới
           </button>
         </div>
 
@@ -636,7 +650,7 @@ export default function PaymentSchedule() {
             <input
               type="text"
               className="search-input-field"
-              placeholder="Ví dụ: thanh toán Gemini account cho khoang4@kent.edu vào ngày 15/09/2026, lặp lại hàng tháng, 12 lần, 500k"
+              placeholder="Ví dụ: nhắc thanh toán Gemini account cho khoang4@kent.edu từ ngày 15/09/2026, lặp lại hàng tháng, 12 lần, 500k"
               value={quickInputText}
               onChange={(e) => setQuickInputText(e.target.value)}
               onKeyDown={(e) => {
@@ -658,7 +672,7 @@ export default function PaymentSchedule() {
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            Thêm ngay
+            Tạo nhắc nhở
           </button>
         </div>
 
@@ -674,43 +688,43 @@ export default function PaymentSchedule() {
               </span>
             )}
             <span className="pay-chip-badge pay-chip-date">
-              📅 Đến hạn: <strong>{parsedPreview.dueDate ? formatDateDisplay(parsedPreview.dueDate) : 'Chưa rõ'}</strong>
+              📅 Ngày đầu: <strong>{parsedPreview.dueDate ? formatDateDisplay(parsedPreview.dueDate) : 'Chưa rõ'}</strong>
             </span>
             <span className="pay-chip-badge pay-chip-recurrence">
               🔄 Chu kỳ: <strong>{getRecurrenceLabel(parsedPreview.recurrence)}</strong>
             </span>
             <span className="pay-chip-badge pay-chip-count">
-              🔢 Lặp lại: <strong>{parsedPreview.repeatCount ? `${parsedPreview.repeatCount} lần` : 'Vô hạn'}</strong>
+              🔢 Tổng số kỳ: <strong>{parsedPreview.repeatCount ? `${parsedPreview.repeatCount} kỳ` : 'Liên tục'}</strong>
             </span>
             {parsedPreview.amount && (
               <span className="pay-chip-badge pay-chip-amount">
-                💰 Số tiền: <strong>{formatMoney(parsedPreview.amount, parsedPreview.currency)}</strong>
+                💰 Số tiền: <strong>{formatMoney(parsedPreview.amount, parsedPreview.currency)}/kỳ</strong>
               </span>
             )}
           </div>
         ) : (
           <div className="pay-quick-samples-row" style={{ margin: '0.45rem 0 0' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Mẫu thử:</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Mẫu thử nhanh:</span>
             <button
               type="button"
               className="pay-sample-chip"
-              onClick={() => setQuickInputText('thanh toán Gemini account cho khoang4@kent.edu vào ngày 15/09/2026, lặp lại hàng tháng, 12 lần, 500k')}
+              onClick={() => setQuickInputText('thanh toán Gemini account cho khoang4@kent.edu từ ngày 15/09/2026, lặp lại hàng tháng, 12 lần, 500k')}
             >
-              + Gemini khoang4@kent.edu 15/09 12 lần 500k
+              + Gemini khoang4@kent.edu từ 15/09 12 lần 500k
             </button>
             <button
               type="button"
               className="pay-sample-chip"
-              onClick={() => setQuickInputText('Gia hạn Claude Pro cho dev@mikoi.org ngày 28/09, lặp lại hàng tháng, 6 lần, $20')}
+              onClick={() => setQuickInputText('nhắc thanh toán Claude Pro cho dev@mikoi.org từ ngày 28/09, lặp lại hàng tháng, 6 lần, $20')}
             >
-              + Claude Pro dev@mikoi.org 28/09 6 lần $20
+              + Claude Pro dev@mikoi.org từ 28/09 6 lần $20
             </button>
             <button
               type="button"
               className="pay-sample-chip"
-              onClick={() => setQuickInputText('Gia hạn VPS Vultr ngày 05 hàng tháng vô hạn 250k')}
+              onClick={() => setQuickInputText('nhắc VPS Vultr từ ngày 05 hàng tháng 250k')}
             >
-              + VPS Vultr ngày 05 hàng tháng 250k
+              + VPS Vultr từ ngày 05 hàng tháng 250k
             </button>
           </div>
         )}
@@ -728,7 +742,7 @@ export default function PaymentSchedule() {
               type="text"
               className="search-input-field"
               style={{ padding: '0.4rem 0.8rem 0.4rem 2.1rem', fontSize: '0.84rem' }}
-              placeholder="Lọc nhanh danh sách..."
+              placeholder="Lọc nhanh danh sách nhắc nhở..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -744,11 +758,11 @@ export default function PaymentSchedule() {
             onChange={(e) => setStatusFilter(e.target.value as any)}
           >
             <option value="ALL">Tất cả trạng thái</option>
-            <option value="ACTIVE">Đang theo dõi</option>
+            <option value="ACTIVE">Đang nhắc nhở</option>
             <option value="DUE_SOON">Sắp đến hạn (≤ 7 ngày)</option>
-            <option value="OVERDUE">Quá hạn</option>
+            <option value="OVERDUE">Quá hạn thanh toán</option>
             <option value="PAUSED">Tạm dừng</option>
-            <option value="COMPLETED">Đã hoàn tất</option>
+            <option value="COMPLETED">Đã hoàn tất & xóa thẻ</option>
           </select>
 
           <select
@@ -773,7 +787,7 @@ export default function PaymentSchedule() {
             <option value="dueDate">Ngày đến hạn</option>
             <option value="title">Tên A-Z</option>
             <option value="amount">Số tiền</option>
-            <option value="remaining">Số lần còn</option>
+            <option value="remaining">Số kỳ còn lại</option>
           </select>
 
           <button
@@ -795,7 +809,7 @@ export default function PaymentSchedule() {
         </div>
       </div>
 
-      {/* ── SCHEDULES CARDS GRID ── */}
+      {/* ── SCHEDULES COMPACT LIST ── */}
       {filteredSchedules.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '3.5rem 1rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', marginTop: '1rem' }}>
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 1rem', opacity: 0.6 }}>
@@ -804,18 +818,19 @@ export default function PaymentSchedule() {
             <line x1="8" y1="2" x2="8" y2="6" />
             <line x1="3" y1="10" x2="21" y2="10" />
           </svg>
-          <h3 style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: '0.5rem' }}>Không tìm thấy lịch thanh toán nào</h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', maxWidth: '420px', margin: '0 auto 1.25rem' }}>
-            Nhập nhanh một câu ở thanh trên hoặc bấm Thêm Lịch Mới để bắt đầu theo dõi.
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: '0.5rem' }}>Chưa có nhắc nhở thanh toán nào</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', maxWidth: '440px', margin: '0 auto 1.25rem' }}>
+            Nhập ngày thanh toán đầu tiên và số lần lặp, app sẽ tự động tính và nhắc bạn từng kỳ đến hạn.
           </p>
           <button className="btn btn-primary" onClick={() => handleOpenEditModal()}>
-            Thêm Lịch Thanh Toán Đầu Tiên
+            + Tạo Nhắc Nhở Đầu Tiên
           </button>
         </div>
       ) : (
         <div className="pay-compact-list">
           {filteredSchedules.map(item => {
-            const dueInfo = getDueStatus(item.dueDate, item.status);
+            const currentCycleNum = item.completedCount + 1;
+            const dueInfo = getDueStatus(item.dueDate, item.status, currentCycleNum);
             const totalRep = item.repeatCount;
 
             return (
@@ -823,7 +838,7 @@ export default function PaymentSchedule() {
                 key={item.id}
                 className={`pay-compact-item ${item.status === 'paused' ? 'is-paused' : ''} ${item.status === 'completed' ? 'is-completed' : ''} ${item.status === 'pending_card_removal' ? 'is-pending-removal' : ''}`}
               >
-                {/* Left: Icon, Title, Email & Due info */}
+                {/* Left: Icon, Title, Email & Reminder info */}
                 <div className="pay-compact-left">
                   <div className="pay-compact-icon">
                     {getBrandIcon(item.title, item.category)}
@@ -832,21 +847,33 @@ export default function PaymentSchedule() {
                     <div className="pay-compact-title-line">
                       <span className="pay-compact-title" title={item.title}>{item.title}</span>
                       {item.accountEmail && (
-                        <span className="pay-compact-email">{item.accountEmail}</span>
+                        <span className="pay-compact-email">({item.accountEmail})</span>
                       )}
                       <span className={dueInfo.badgeClass}>{dueInfo.label}</span>
                     </div>
 
                     <div className="pay-compact-sub-line">
-                      <span>Đến hạn: <strong>{formatDateDisplay(item.dueDate)}</strong></span>
-                      <span>•</span>
-                      <span>{getRecurrenceLabel(item.recurrence)}</span>
-                      <span>•</span>
-                      <span>{totalRep !== null && totalRep !== undefined ? `Đã đóng ${item.completedCount}/${totalRep} kỳ` : `Đã đóng ${item.completedCount} kỳ`}</span>
-                      {item.note && (
+                      {item.status === 'pending_card_removal' ? (
+                        <span style={{ color: '#f59e0b', fontWeight: 600 }}>
+                          🚨 Đã đóng đủ {item.completedCount}/{totalRep} kỳ. Hãy vào gỡ thẻ thanh toán khỏi dịch vụ!
+                        </span>
+                      ) : item.status === 'completed' ? (
+                        <span style={{ color: '#10b981' }}>
+                          ✓ Đã hoàn tất {totalRep ? `${totalRep}/${totalRep} kỳ` : ''} và đã xóa thẻ thành công
+                        </span>
+                      ) : (
                         <>
+                          <span>Ngày thanh toán: <strong>{formatDateDisplay(item.dueDate)}</strong></span>
                           <span>•</span>
-                          <span className="pay-compact-note">{item.note}</span>
+                          <span>{getRecurrenceLabel(item.recurrence)}</span>
+                          <span>•</span>
+                          <span>{totalRep !== null && totalRep !== undefined ? `Kỳ hiện tại: ${currentCycleNum}/${totalRep}` : `Đã đóng ${item.completedCount} kỳ`}</span>
+                          {item.note && (
+                            <>
+                              <span>•</span>
+                              <span className="pay-compact-note">{item.note}</span>
+                            </>
+                          )}
                         </>
                       )}
                     </div>
@@ -864,26 +891,26 @@ export default function PaymentSchedule() {
                       <button
                         className="btn pay-action-removal-btn"
                         onClick={() => handleConfirmCardRemoved(item.id)}
-                        title="Đã hoàn tất các kỳ. Bấm xác nhận sau khi đã gỡ thẻ khỏi tài khoản dịch vụ"
+                        title="Bấm để xác nhận bạn đã gỡ thẻ khỏi tài khoản dịch vụ này"
                       >
-                        ⚠️ Xác nhận đã xóa thẻ
+                        🔴 Tôi đã xóa thẻ khỏi dịch vụ
                       </button>
                     ) : item.status === 'completed' ? (
-                      <span className="pay-completed-tag">✓ Đã xong</span>
+                      <span className="pay-completed-tag">✓ Hoàn tất</span>
                     ) : (
                       <button
                         className="btn pay-action-paid-btn"
                         onClick={() => handleMarkAsPaid(item)}
-                        title="Đã thanh toán kỳ này (Dời sang kỳ sau)"
+                        title={`Xác nhận đã thanh toán Kỳ ${currentCycleNum} (App sẽ tự động tính và nhắc Kỳ ${currentCycleNum + 1})`}
                       >
-                        ✓ Đã thanh toán
+                        ✓ Đã thanh toán Kỳ {currentCycleNum}
                       </button>
                     )}
 
                     <button
                       className="pay-icon-btn"
                       onClick={() => handleTogglePause(item)}
-                      title={item.status === 'paused' ? 'Tiếp tục theo dõi' : 'Tạm dừng'}
+                      title={item.status === 'paused' ? 'Tiếp tục nhắc nhở' : 'Tạm dừng nhắc'}
                     >
                       {item.status === 'paused' ? (
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.2">
@@ -900,7 +927,7 @@ export default function PaymentSchedule() {
                     <button
                       className="pay-icon-btn"
                       onClick={() => handleOpenEditModal(item)}
-                      title="Sửa"
+                      title="Chỉnh sửa nhắc nhở"
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -911,7 +938,7 @@ export default function PaymentSchedule() {
                     <button
                       className="pay-icon-btn pay-icon-btn-danger"
                       onClick={() => handleDeleteItem(item.id)}
-                      title="Xóa"
+                      title="Xóa nhắc nhở này"
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
                         <polyline points="3 6 5 6 21 6" />
@@ -926,12 +953,12 @@ export default function PaymentSchedule() {
         </div>
       )}
 
-      {/* ── DETAIL / EDIT MODAL (ULTRA-SIMPLE & SLEEK) ── */}
+      {/* ── DETAIL / EDIT MODAL (CORRECT REMINDER CONTEXT) ── */}
       {modalItem && (
         <div className="modal-overlay" onClick={() => setModalItem(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
             <div className="modal-header">
-              <h3>{modalItem === 'NEW' ? 'Thêm Lịch Thanh Toán' : 'Chỉnh Sửa Lịch Thanh Toán'}</h3>
+              <h3>{modalItem === 'NEW' ? 'Tạo Nhắc Nhở Thanh Toán' : 'Chỉnh Sửa Nhắc Nhở'}</h3>
               <button className="modal-close" onClick={() => setModalItem(null)}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -943,11 +970,11 @@ export default function PaymentSchedule() {
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.25rem 1.5rem' }}>
               {/* Service Title */}
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Tên Dịch Vụ / Gói Đăng Ký *</label>
+                <label>Tên Dịch Vụ / Tài Khoản *</label>
                 <input
                   type="text"
                   className="input-text"
-                  placeholder="VD: Gemini Advanced, Claude Pro, VPS Vultr..."
+                  placeholder="VD: Gemini Advanced, Claude Pro, Netflix, VPS..."
                   value={modalForm.title || ''}
                   onChange={(e) => setModalForm(prev => ({ ...prev, title: e.target.value }))}
                   autoFocus
@@ -956,7 +983,7 @@ export default function PaymentSchedule() {
 
               {/* Account Email */}
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Tài Khoản / Email Liên Kết</label>
+                <label>Tài Khoản / Email Nhận Nhắc Nhở</label>
                 <input
                   type="text"
                   className="input-text"
@@ -966,10 +993,10 @@ export default function PaymentSchedule() {
                 />
               </div>
 
-              {/* Due Date & Recurrence Row */}
+              {/* First Payment Date & Recurrence Row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label>Ngày Đến Hạn *</label>
+                  <label>Ngày Thanh Toán Đầu Tiên *</label>
                   <input
                     type="date"
                     className="input-text"
@@ -984,7 +1011,7 @@ export default function PaymentSchedule() {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label>Chu Kỳ Lặp Lại</label>
+                  <label>Chu Kỳ Nhắc Nhở</label>
                   <select
                     className="input-select"
                     value={modalForm.recurrence || 'monthly'}
@@ -998,10 +1025,10 @@ export default function PaymentSchedule() {
                 </div>
               </div>
 
-              {/* Amount & Currency & Repeat Count Row */}
+              {/* Amount, Currency & Total Cycles Row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 1fr', gap: '0.75rem' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label>Số Tiền</label>
+                  <label>Số Tiền Mỗi Kỳ</label>
                   <input
                     type="number"
                     className="input-text"
@@ -1024,11 +1051,11 @@ export default function PaymentSchedule() {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label>Số Lần Lặp</label>
+                  <label>Số Lần (Kỳ)</label>
                   <input
                     type="number"
                     className="input-text"
-                    placeholder="Vô hạn"
+                    placeholder="VD: 12"
                     value={modalForm.repeatCount === null || modalForm.repeatCount === undefined ? '' : modalForm.repeatCount}
                     onChange={(e) => setModalForm(prev => ({
                       ...prev,
@@ -1036,6 +1063,10 @@ export default function PaymentSchedule() {
                     }))}
                   />
                 </div>
+              </div>
+
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', lineHeight: 1.4, background: 'rgba(255,255,255,0.03)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', borderLeft: '2.5px solid var(--color-accent)' }}>
+                💡 <strong>Cách hoạt động:</strong> Bạn chỉ cần chọn ngày thanh toán đầu tiên và số kỳ. App sẽ tự động tính và nhắc bạn từng kỳ (sắp đến, hôm nay, quá hạn). Sau khi bạn thanh toán xong kỳ cuối, app sẽ nhắc bạn xóa thẻ khỏi dịch vụ.
               </div>
 
               {/* Optional Note */}
@@ -1059,7 +1090,7 @@ export default function PaymentSchedule() {
                   style={{ padding: '0.5rem 1rem' }}
                   onClick={() => handleDeleteItem((modalItem as PaymentScheduleItem).id)}
                 >
-                  Xóa
+                  Xóa Nhắc Nhở
                 </button>
               ) : <div />}
 
@@ -1073,7 +1104,7 @@ export default function PaymentSchedule() {
                   onClick={handleSaveModal}
                   disabled={!modalForm.title?.trim()}
                 >
-                  Lưu
+                  Lưu Nhắc Nhở
                 </button>
               </div>
             </div>
