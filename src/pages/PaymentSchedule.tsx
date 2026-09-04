@@ -22,57 +22,6 @@ export interface PaymentScheduleItem {
 
 const STORAGE_KEY = 'tkw_payment_schedules_cache';
 
-const INITIAL_SCHEDULES: PaymentScheduleItem[] = [
-  {
-    id: 'pay-gemini-khoang4',
-    title: 'Gemini Advanced Account',
-    accountEmail: 'khoang4@kent.edu',
-    dueDate: new Date(2026, 8, 15, 12, 0).getTime(), // Sep 15, 2026
-    amount: 500000,
-    currency: 'VND',
-    recurrence: 'monthly',
-    repeatCount: 12,
-    completedCount: 1,
-    status: 'active',
-    note: 'Gói Gemini Ultra cho tài khoản trường Kent',
-    category: 'AI Tool',
-    createdAt: Date.now() - 30 * 86400000,
-    updatedAt: Date.now()
-  },
-  {
-    id: 'pay-claude-pro',
-    title: 'Claude Pro Subscription',
-    accountEmail: 'dev@mikoi.org',
-    dueDate: new Date(2026, 8, 28, 12, 0).getTime(), // Sep 28, 2026
-    amount: 20,
-    currency: 'USD',
-    recurrence: 'monthly',
-    repeatCount: 6,
-    completedCount: 2,
-    status: 'active',
-    note: 'Tài khoản Claude Code làm việc dự án BETH',
-    category: 'AI Tool',
-    createdAt: Date.now() - 60 * 86400000,
-    updatedAt: Date.now()
-  },
-  {
-    id: 'pay-vps-vultr',
-    title: 'VPS Vultr Cloud Server',
-    accountEmail: 'admin@minkoi.org',
-    dueDate: new Date(2026, 8, 5, 12, 0).getTime(), // Sep 5, 2026
-    amount: 250000,
-    currency: 'VND',
-    recurrence: 'monthly',
-    repeatCount: null, // infinite
-    completedCount: 14,
-    status: 'active',
-    note: 'Server lưu trữ API coffee_shop_24hxh',
-    category: 'Cloud & Hosting',
-    createdAt: Date.now() - 400 * 86400000,
-    updatedAt: Date.now()
-  }
-];
-
 function getBrandIcon(title: string, category?: string) {
   const t = title.toLowerCase();
   if (t.includes('gemini') || t.includes('google')) {
@@ -155,25 +104,15 @@ export default function PaymentSchedule() {
   const [sortBy, setSortBy] = useState<'dueDate' | 'title' | 'amount' | 'remaining'>('dueDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // Load data from LocalStorage + Supabase
+  // Load data from Supabase + LocalStorage
   useEffect(() => {
     const loadData = async () => {
       let loaded: PaymentScheduleItem[] = [];
 
-      // 1. Try local cache first
-      try {
-        const cached = localStorage.getItem(STORAGE_KEY);
-        if (cached) {
-          loaded = JSON.parse(cached);
-        }
-      } catch {
-        // Safe fallback
-      }
-
-      // 2. Try fetching from Supabase table `tkw_payment_schedules`
+      // 1. Fetch from Supabase table `tkw_payment_schedules`
       try {
         const { data, error } = await supabase.from('tkw_payment_schedules').select('*');
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           loaded = data.map(item => ({
             id: item.id,
             title: item.title,
@@ -191,13 +130,18 @@ export default function PaymentSchedule() {
             createdAt: item.created_at ? Number(item.created_at) : Date.now(),
             updatedAt: item.updated_at ? Number(item.updated_at) : Date.now(),
           }));
+        } else if (error) {
+          console.warn('Supabase fetch error (table might need creation):', error.message);
+          // Fallback to local cache only if Supabase had an error
+          const cached = localStorage.getItem(STORAGE_KEY);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            // Filter out any legacy mock data
+            loaded = parsed.filter((p: PaymentScheduleItem) => !p.id.startsWith('pay-gemini-') && !p.id.startsWith('pay-claude-') && !p.id.startsWith('pay-vps-'));
+          }
         }
-      } catch {
-        // Ignore Supabase connection error and use fallback cache
-      }
-
-      if (loaded.length === 0) {
-        loaded = INITIAL_SCHEDULES;
+      } catch (err) {
+        console.warn('Supabase connection error:', err);
       }
 
       setSchedules(loaded);
@@ -207,7 +151,7 @@ export default function PaymentSchedule() {
     loadData();
   }, []);
 
-  // Save changes to LocalStorage & Supabase sync
+  // Realtime Sync changes to Supabase & LocalStorage
   useEffect(() => {
     if (!isLoaded) return;
 
@@ -237,10 +181,18 @@ export default function PaymentSchedule() {
             created_at: s.createdAt,
             updated_at: s.updatedAt,
           }));
-          await supabase.from('tkw_payment_schedules').upsert(payload);
+          const { error: upsertErr } = await supabase.from('tkw_payment_schedules').upsert(payload);
+          if (upsertErr) console.warn('Supabase upsert error:', upsertErr.message);
+
+          // Delete records that were removed locally
+          const scheduleIds = schedules.map(s => s.id);
+          await supabase.from('tkw_payment_schedules').delete().not('id', 'in', `(${scheduleIds.map(id => `"${id}"`).join(',')})`);
+        } else {
+          // If all schedules deleted, clear table
+          await supabase.from('tkw_payment_schedules').delete().neq('id', 'non_existent');
         }
-      } catch {
-        // Gracefully ignore missing table
+      } catch (err) {
+        console.warn('Supabase sync error:', err);
       }
     };
 
