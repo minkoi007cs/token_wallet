@@ -13,6 +13,8 @@ export interface PaymentScheduleItem {
   repeatCount?: number | null; // total iterations to repeat, null = infinite
   completedCount: number; // how many cycles already paid
   status: 'active' | 'paused' | 'pending_card_removal' | 'completed';
+  paymentMethod?: string; // e.g. "Visa 8899", "Momo", "Timo"
+  isAutoDebit?: boolean; // true = auto-debit (prepare balance), false = manual payment
   note?: string;
   category?: string;
   lastPaymentDate?: number;
@@ -89,6 +91,8 @@ function getBrandIcon(title: string, category?: string) {
 export default function PaymentSchedule() {
   const [schedules, setSchedules] = useState<PaymentScheduleItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [dbSyncError, setDbSyncError] = useState<string | null>(null);
+  const [showSqlModal, setShowSqlModal] = useState(false);
 
   // Quick Smart Input State
   const [quickInputText, setQuickInputText] = useState('');
@@ -124,24 +128,28 @@ export default function PaymentSchedule() {
             repeatCount: item.repeat_count !== null && item.repeat_count !== undefined ? Number(item.repeat_count) : null,
             completedCount: Number(item.completed_count || 0),
             status: item.status || 'active',
+            paymentMethod: item.payment_method || '',
+            isAutoDebit: !!item.is_auto_debit,
             note: item.note || '',
             category: item.category || 'Subscription',
             lastPaymentDate: item.last_payment_date ? Number(item.last_payment_date) : undefined,
             createdAt: item.created_at ? Number(item.created_at) : Date.now(),
             updatedAt: item.updated_at ? Number(item.updated_at) : Date.now(),
           }));
+          setDbSyncError(null);
         } else if (error) {
-          console.warn('Supabase fetch error (table might need creation):', error.message);
+          console.warn('Supabase fetch error:', error.message);
+          setDbSyncError(error.message);
           // Fallback to local cache only if Supabase had an error
           const cached = localStorage.getItem(STORAGE_KEY);
           if (cached) {
             const parsed = JSON.parse(cached);
-            // Filter out any legacy mock data
             loaded = parsed.filter((p: PaymentScheduleItem) => !p.id.startsWith('pay-gemini-') && !p.id.startsWith('pay-claude-') && !p.id.startsWith('pay-vps-'));
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn('Supabase connection error:', err);
+        setDbSyncError(err?.message || 'Lỗi kết nối Supabase');
       }
 
       setSchedules(loaded);
@@ -175,6 +183,8 @@ export default function PaymentSchedule() {
             repeat_count: s.repeatCount,
             completed_count: s.completedCount,
             status: s.status,
+            payment_method: s.paymentMethod || null,
+            is_auto_debit: !!s.isAutoDebit,
             note: s.note || null,
             category: s.category || null,
             last_payment_date: s.lastPaymentDate || null,
@@ -182,7 +192,12 @@ export default function PaymentSchedule() {
             updated_at: s.updatedAt,
           }));
           const { error: upsertErr } = await supabase.from('tkw_payment_schedules').upsert(payload);
-          if (upsertErr) console.warn('Supabase upsert error:', upsertErr.message);
+          if (upsertErr) {
+            console.warn('Supabase upsert error:', upsertErr.message);
+            setDbSyncError(upsertErr.message);
+          } else {
+            setDbSyncError(null);
+          }
 
           // Delete records that were removed locally
           const scheduleIds = schedules.map(s => s.id);
@@ -191,8 +206,9 @@ export default function PaymentSchedule() {
           // If all schedules deleted, clear table
           await supabase.from('tkw_payment_schedules').delete().neq('id', 'non_existent');
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn('Supabase sync error:', err);
+        setDbSyncError(err?.message || 'Lỗi đồng bộ Supabase');
       }
     };
 
@@ -219,6 +235,8 @@ export default function PaymentSchedule() {
       repeatCount: parsedPreview.repeatCount,
       completedCount: 0,
       status: 'active',
+      paymentMethod: parsedPreview.paymentMethod || undefined,
+      isAutoDebit: parsedPreview.isAutoDebit,
       note: parsedPreview.accountEmail ? `Tài khoản ${parsedPreview.accountEmail}` : undefined,
       category: 'Subscription',
       createdAt: Date.now(),
@@ -267,7 +285,7 @@ export default function PaymentSchedule() {
 
   // Quick Action: Delete
   const handleDeleteItem = (id: string) => {
-    if (window.confirm('Bạn có chắc muốn xóa lịch thanh toán này không?')) {
+    if (window.confirm('Bạn có chắc muốn xóa lịch nhắc thanh toán này không?')) {
       setSchedules(prev => prev.filter(s => s.id !== id));
       if (modalItem) setModalItem(null);
     }
@@ -294,6 +312,8 @@ export default function PaymentSchedule() {
         repeatCount: 12,
         completedCount: 0,
         status: 'active',
+        paymentMethod: '',
+        isAutoDebit: false,
         note: '',
         category: 'Subscription'
       });
@@ -316,6 +336,8 @@ export default function PaymentSchedule() {
         repeatCount: modalForm.repeatCount === 0 || modalForm.repeatCount === null || modalForm.repeatCount === undefined ? null : Number(modalForm.repeatCount),
         completedCount: Number(modalForm.completedCount || 0),
         status: modalForm.status || 'active',
+        paymentMethod: modalForm.paymentMethod?.trim() || undefined,
+        isAutoDebit: !!modalForm.isAutoDebit,
         note: modalForm.note?.trim() || undefined,
         category: modalForm.category || 'Subscription',
         createdAt: Date.now(),
@@ -336,6 +358,8 @@ export default function PaymentSchedule() {
           repeatCount: modalForm.repeatCount === 0 || modalForm.repeatCount === null || modalForm.repeatCount === undefined ? null : Number(modalForm.repeatCount),
           completedCount: Number(modalForm.completedCount || 0),
           status: modalForm.status || s.status,
+          paymentMethod: modalForm.paymentMethod?.trim() || undefined,
+          isAutoDebit: !!modalForm.isAutoDebit,
           note: modalForm.note?.trim() || undefined,
           category: modalForm.category || s.category,
           updatedAt: Date.now()
@@ -344,6 +368,7 @@ export default function PaymentSchedule() {
     }
 
     setModalItem(null);
+  };Item(null);
   };
 
   // Calculate Days Remaining & Urgency for Reminder
@@ -653,6 +678,14 @@ export default function PaymentSchedule() {
                 💰 Số tiền: <strong>{formatMoney(parsedPreview.amount, parsedPreview.currency)}/kỳ</strong>
               </span>
             )}
+            {parsedPreview.paymentMethod && (
+              <span className="pay-chip-badge" style={{ borderColor: '#6366f1', color: '#a5b4fc' }}>
+                💳 {parsedPreview.paymentMethod}
+              </span>
+            )}
+            <span className="pay-chip-badge" style={{ borderColor: parsedPreview.isAutoDebit ? '#38bdf8' : '#f59e0b' }}>
+              {parsedPreview.isAutoDebit ? '🔄 Tự động trừ' : '🖐️ Thủ công'}
+            </span>
           </div>
         ) : (
           <div className="pay-quick-samples-row" style={{ margin: '0.45rem 0 0' }}>
@@ -660,23 +693,23 @@ export default function PaymentSchedule() {
             <button
               type="button"
               className="pay-sample-chip"
-              onClick={() => setQuickInputText('thanh toán Gemini account cho khoang4@kent.edu từ ngày 15/09/2026, lặp lại hàng tháng, 12 lần, 500k')}
+              onClick={() => setQuickInputText('nhắc thanh toán Gemini account cho khoang4@kent.edu từ ngày 15/09/2026, lặp lại hàng tháng, 12 lần, 500k qua Visa 8899 tự động')}
             >
-              + Gemini khoang4@kent.edu từ 15/09 12 lần 500k
+              + Gemini khoang4@kent.edu 15/09 12 lần 500k Visa 8899 auto
             </button>
             <button
               type="button"
               className="pay-sample-chip"
-              onClick={() => setQuickInputText('nhắc thanh toán Claude Pro cho dev@mikoi.org từ ngày 28/09, lặp lại hàng tháng, 6 lần, $20')}
+              onClick={() => setQuickInputText('nhắc thanh toán Claude Pro cho dev@mikoi.org từ ngày 28/09, lặp lại hàng tháng, 6 lần, $20 qua Timo tự động')}
             >
-              + Claude Pro dev@mikoi.org từ 28/09 6 lần $20
+              + Claude Pro dev@mikoi.org 28/09 6 lần $20 qua Timo
             </button>
             <button
               type="button"
               className="pay-sample-chip"
-              onClick={() => setQuickInputText('nhắc VPS Vultr từ ngày 05 hàng tháng 250k')}
+              onClick={() => setQuickInputText('nhắc VPS Vultr từ ngày 05 hàng tháng 250k bằng Momo thủ công')}
             >
-              + VPS Vultr từ ngày 05 hàng tháng 250k
+              + VPS Vultr 05 hàng tháng 250k Momo
             </button>
           </div>
         )}
@@ -761,6 +794,23 @@ export default function PaymentSchedule() {
         </div>
       </div>
 
+      {/* ── SUPABASE SYNC NOTICE (If table is missing) ── */}
+      {dbSyncError && (
+        <div style={{ margin: '0.75rem 0', padding: '0.65rem 1rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ fontSize: '0.82rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span>⚠️</span>
+            <span><strong>Cảnh báo đồng bộ Supabase:</strong> Dữ liệu chưa lưu vào database đám mây do bảng <code>tkw_payment_schedules</code> chưa được tạo trên Supabase.</span>
+          </div>
+          <button
+            className="btn btn-primary"
+            style={{ padding: '0.3rem 0.75rem', fontSize: '0.78rem', background: '#ef4444', borderColor: '#dc2626' }}
+            onClick={() => setShowSqlModal(true)}
+          >
+            Lấy mã SQL tạo bảng (1-Click)
+          </button>
+        </div>
+      )}
+
       {/* ── SCHEDULES COMPACT LIST ── */}
       {filteredSchedules.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '3.5rem 1rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', marginTop: '1rem' }}>
@@ -802,6 +852,18 @@ export default function PaymentSchedule() {
                         <span className="pay-compact-email">({item.accountEmail})</span>
                       )}
                       <span className={dueInfo.badgeClass}>{dueInfo.label}</span>
+
+                      {/* Payment Method Badge */}
+                      {item.paymentMethod && (
+                        <span style={{ fontSize: '0.74rem', padding: '0.15rem 0.45rem', borderRadius: '4px', background: 'rgba(99, 102, 241, 0.12)', border: '1px solid rgba(99, 102, 241, 0.3)', color: '#a5b4fc', fontWeight: 600 }}>
+                          💳 {item.paymentMethod}
+                        </span>
+                      )}
+
+                      {/* Auto-Debit vs Manual Badge */}
+                      <span style={{ fontSize: '0.74rem', padding: '0.15rem 0.45rem', borderRadius: '4px', background: item.isAutoDebit ? 'rgba(56, 189, 248, 0.12)' : 'rgba(245, 158, 11, 0.12)', border: item.isAutoDebit ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(245, 158, 11, 0.3)', color: item.isAutoDebit ? '#38bdf8' : '#fbbf24', fontWeight: 600 }}>
+                        {item.isAutoDebit ? '🔄 Tự động trừ (Chuẩn bị số dư)' : '🖐️ Cần đóng tay'}
+                      </span>
                     </div>
 
                     <div className="pay-compact-sub-line">
@@ -908,7 +970,7 @@ export default function PaymentSchedule() {
       {/* ── DETAIL / EDIT MODAL (CORRECT REMINDER CONTEXT) ── */}
       {modalItem && (
         <div className="modal-overlay" onClick={() => setModalItem(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
             <div className="modal-header">
               <h3>{modalItem === 'NEW' ? 'Tạo Nhắc Nhở Thanh Toán' : 'Chỉnh Sửa Nhắc Nhở'}</h3>
               <button className="modal-close" onClick={() => setModalItem(null)}>
@@ -1017,6 +1079,32 @@ export default function PaymentSchedule() {
                 </div>
               </div>
 
+              {/* Payment Method & Auto-Debit Settings */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.75rem' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Số Đuôi Thẻ / Ví (Tùy chọn)</label>
+                  <input
+                    type="text"
+                    className="input-text"
+                    placeholder="VD: Visa 8899, Momo, Timo..."
+                    value={modalForm.paymentMethod || ''}
+                    onChange={(e) => setModalForm(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Hình Thức Thanh Toán</label>
+                  <select
+                    className="input-select"
+                    value={modalForm.isAutoDebit ? 'auto' : 'manual'}
+                    onChange={(e) => setModalForm(prev => ({ ...prev, isAutoDebit: e.target.value === 'auto' }))}
+                  >
+                    <option value="manual">🖐️ Thanh toán thủ công</option>
+                    <option value="auto">🔄 Tự động trừ qua thẻ</option>
+                  </select>
+                </div>
+              </div>
+
               <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', lineHeight: 1.4, background: 'rgba(255,255,255,0.03)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', borderLeft: '2.5px solid var(--color-accent)' }}>
                 💡 <strong>Cách hoạt động:</strong> Bạn chỉ cần chọn ngày thanh toán đầu tiên và số kỳ. App sẽ tự động tính và nhắc bạn từng kỳ (sắp đến, hôm nay, quá hạn). Sau khi bạn thanh toán xong kỳ cuối, app sẽ nhắc bạn xóa thẻ khỏi dịch vụ.
               </div>
@@ -1059,6 +1147,84 @@ export default function PaymentSchedule() {
                   Lưu Nhắc Nhở
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── SQL SCHEMA MODAL (For easy 1-click database creation) ── */}
+      {showSqlModal && (
+        <div className="modal-overlay" onClick={() => setShowSqlModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '620px' }}>
+            <div className="modal-header">
+              <h3>Khởi Tạo Bảng Supabase</h3>
+              <button className="modal-close" onClick={() => setShowSqlModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                Mở <strong>Supabase Dashboard &rarr; SQL Editor</strong>, dán đoạn lệnh sau và bấm <strong>Run</strong> để tạo bảng đồng bộ xuyên suốt Mobile và PC:
+              </p>
+              <pre style={{ background: 'rgba(0,0,0,0.4)', padding: '1rem', borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', overflowX: 'auto', border: '1px solid var(--color-border)' }}>
+{`CREATE TABLE IF NOT EXISTS public.tkw_payment_schedules (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  account_email TEXT,
+  due_date BIGINT NOT NULL,
+  amount NUMERIC,
+  currency TEXT DEFAULT 'VND',
+  recurrence TEXT DEFAULT 'monthly',
+  repeat_count INTEGER,
+  completed_count INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'active',
+  payment_method TEXT,
+  is_auto_debit BOOLEAN DEFAULT false,
+  note TEXT,
+  category TEXT,
+  last_payment_date BIGINT,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+
+ALTER TABLE public.tkw_payment_schedules ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all for anon on tkw_payment_schedules" ON public.tkw_payment_schedules;
+CREATE POLICY "Allow all for anon on tkw_payment_schedules" 
+ON public.tkw_payment_schedules FOR ALL USING (true) WITH CHECK (true);`}
+              </pre>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  navigator.clipboard.writeText(`CREATE TABLE IF NOT EXISTS public.tkw_payment_schedules (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  account_email TEXT,
+  due_date BIGINT NOT NULL,
+  amount NUMERIC,
+  currency TEXT DEFAULT 'VND',
+  recurrence TEXT DEFAULT 'monthly',
+  repeat_count INTEGER,
+  completed_count INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'active',
+  payment_method TEXT,
+  is_auto_debit BOOLEAN DEFAULT false,
+  note TEXT,
+  category TEXT,
+  last_payment_date BIGINT,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+);
+
+ALTER TABLE public.tkw_payment_schedules ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all for anon on tkw_payment_schedules" ON public.tkw_payment_schedules;
+CREATE POLICY "Allow all for anon on tkw_payment_schedules" 
+ON public.tkw_payment_schedules FOR ALL USING (true) WITH CHECK (true);`);
+                  alert('Đã sao chép câu lệnh SQL vào bộ nhớ đệm!');
+                }}
+              >
+                Sao Chép Lệnh SQL
+              </button>
+              <button className="btn" onClick={() => setShowSqlModal(false)}>Đóng</button>
             </div>
           </div>
         </div>

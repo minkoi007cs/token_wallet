@@ -12,6 +12,8 @@ export interface ParsedPaymentInfo {
   repeatCount: number | null; // null means infinite
   amount: number | null;
   currency: 'VND' | 'USD';
+  paymentMethod?: string;
+  isAutoDebit: boolean;
   rawInput: string;
 }
 
@@ -27,6 +29,8 @@ export function parsePaymentScheduleText(input: string): ParsedPaymentInfo {
       repeatCount: null,
       amount: null,
       currency: 'VND',
+      paymentMethod: '',
+      isAutoDebit: false,
       rawInput: text
     };
   }
@@ -41,7 +45,25 @@ export function parsePaymentScheduleText(input: string): ParsedPaymentInfo {
     accountEmail = emailMatch[1];
   }
 
-  // 2. Extract Amount & Currency
+  // 2. Extract Payment Method (e.g. Visa 8899, Timo, Momo, ZaloPay, Techcombank, thẻ 1234...)
+  let paymentMethod = '';
+  const cardMatch = cleaned.match(/\b(visa|mastercard|timo|momo|zalopay|vcb|tcb|mbbank|vpbank)\s*([a-zA-Z0-9._-]+)?/i);
+  const cardTailMatch = cleaned.match(/\bthẻ\s+([a-zA-Z0-9._-]+)/i);
+  if (cardMatch) {
+    paymentMethod = cardMatch[0].trim();
+  } else if (cardTailMatch) {
+    paymentMethod = `Thẻ ${cardTailMatch[1]}`;
+  }
+
+  // 3. Extract Auto-debit vs Manual
+  let isAutoDebit = false;
+  if (/tự động|auto|tự trừ|tự gia hạn/i.test(cleaned)) {
+    isAutoDebit = true;
+  } else if (/thủ công|manual|tự đóng|tự chuyển/i.test(cleaned)) {
+    isAutoDebit = false;
+  }
+
+  // 4. Extract Amount & Currency
   let amount: number | null = null;
   let currency: 'VND' | 'USD' = 'VND';
 
@@ -76,7 +98,7 @@ export function parsePaymentScheduleText(input: string): ParsedPaymentInfo {
     }
   }
 
-  // 3. Extract Repeat Count (e.g., "12 lần", "6 lần", "3 kỳ", "vô hạn", "không giới hạn")
+  // 5. Extract Repeat Count (e.g., "12 lần", "6 lần", "3 kỳ", "vô hạn", "không giới hạn")
   let repeatCount: number | null = null;
   if (/vô hạn|không giới hạn|vĩnh viễn|forever|infinite/i.test(cleaned)) {
     repeatCount = null;
@@ -87,7 +109,7 @@ export function parsePaymentScheduleText(input: string): ParsedPaymentInfo {
     }
   }
 
-  // 4. Extract Recurrence (hàng tháng, hàng năm, hàng tuần, hàng ngày, một lần)
+  // 6. Extract Recurrence (hàng tháng, hàng năm, hàng tuần, hàng ngày, một lần)
   let recurrence: 'monthly' | 'yearly' | 'weekly' | 'daily' | 'one-time' = 'monthly';
   if (/hàng năm|mỗi năm|yearly|annually|năm/i.test(cleaned)) {
     recurrence = 'yearly';
@@ -101,7 +123,7 @@ export function parsePaymentScheduleText(input: string): ParsedPaymentInfo {
     recurrence = 'monthly';
   }
 
-  // 5. Extract Due Date (e.g., "ngày 15/09/2026", "15/09", "2026-09-15", "ngày 15", "15th")
+  // 7. Extract Due Date (e.g., "ngày 15/09/2026", "15/09", "2026-09-15", "ngày 15", "15th")
   let dueDate: number | null = null;
   let dueDateString = '';
 
@@ -163,7 +185,7 @@ export function parsePaymentScheduleText(input: string): ParsedPaymentInfo {
     dueDateString = formatDateToYMD(defaultDate);
   }
 
-  // 6. Extract Service Name / Title
+  // 8. Extract Service Name / Title
   let title = cleaned;
 
   // Remove boilerplate phrases
@@ -171,21 +193,30 @@ export function parsePaymentScheduleText(input: string): ParsedPaymentInfo {
     /^thanh\s*toán\s+/i,
     /^gia\s*hạn\s+/i,
     /^nhắc\s*hạn\s+/i,
+    /^nhắc\s*thanh\s*toán\s+/i,
+    /^nhắc\s+/i,
     /^mua\s+/i,
     /^tiền\s+/i,
     /\bcho\s+[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i,
     /\bcho\s+[^\s,]+/i,
     /\bvào\s+ngày\s+[^,]+/i,
+    /\btừ\s+ngày\s+[^,]+/i,
     /\bngày\s+[^,]+/i,
     /\blặp\s*lại\s+[^,]+/i,
     /\bhàng\s*tháng/i,
     /\bhàng\s*năm/i,
     /\bhàng\s*tuần/i,
     /\b\d+\s*lần/i,
+    /\b\d+\s*kỳ/i,
     /\b\d+k\b/i,
     /\$\s*\d+/i,
     /\d+\s*\$/i,
-    /\d{1,3}(?:[.,]\d{3})+\s*(?:đ|vnd|vnđ)?/i
+    /\d{1,3}(?:[.,]\d{3})+\s*(?:đ|vnd|vnđ)?/i,
+    /\btự\s*động\b/i,
+    /\bthủ\s*công\b/i,
+    /\bqua\s+(?:timo|momo|zalopay|vcb|tcb|visa|mastercard)\b/i,
+    /\bbằng\s+(?:timo|momo|zalopay|vcb|tcb|visa|mastercard)\b/i,
+    /\bthẻ\s+[a-zA-Z0-9._-]+\b/i
   ];
 
   noisePatterns.forEach(pattern => {
@@ -218,6 +249,8 @@ export function parsePaymentScheduleText(input: string): ParsedPaymentInfo {
     repeatCount,
     amount,
     currency,
+    paymentMethod: paymentMethod ? capitalizeFirst(paymentMethod) : undefined,
+    isAutoDebit,
     rawInput: text
   };
 }

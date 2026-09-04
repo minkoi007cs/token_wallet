@@ -14,12 +14,18 @@ CREATE TABLE IF NOT EXISTS public.tkw_payment_schedules (
   repeat_count INTEGER,
   completed_count INTEGER DEFAULT 0,
   status TEXT DEFAULT 'active',
+  payment_method TEXT,
+  is_auto_debit BOOLEAN DEFAULT false,
   note TEXT,
   category TEXT,
   last_payment_date BIGINT,
   created_at BIGINT NOT NULL,
   updated_at BIGINT NOT NULL
 );
+
+-- In case table was created earlier without the new columns:
+ALTER TABLE public.tkw_payment_schedules ADD COLUMN IF NOT EXISTS payment_method TEXT;
+ALTER TABLE public.tkw_payment_schedules ADD COLUMN IF NOT EXISTS is_auto_debit BOOLEAN DEFAULT false;
 
 -- Enable RLS and create open policy for anon client
 ALTER TABLE public.tkw_payment_schedules ENABLE ROW LEVEL SECURITY;
