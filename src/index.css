@@ -826,10 +826,13 @@ header h1 svg {
 .due-badge {
   font-size: 0.72rem;
   font-weight: 600;
-  padding: 0.1rem 0.45rem;
+  padding: 0.12rem 0.5rem;
   border-radius: 4px;
-  margin-left: 0.5rem;
+  margin-left: 0.4rem;
   letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
 }
 
 .due-badge.due-ok {
@@ -838,22 +841,37 @@ header h1 svg {
   border: 1px solid rgba(74, 222, 128, 0.25);
 }
 
+/* Còn 1 tuần (<= 7 ngày): Highlight MÀU CAM */
 .due-badge.due-soon {
-  color: #facc15;
-  background: rgba(250, 204, 21, 0.12);
-  border: 1px solid rgba(250, 204, 21, 0.25);
+  color: #fb923c;
+  background: rgba(249, 115, 22, 0.15);
+  border: 1px solid rgba(249, 115, 22, 0.38);
 }
 
+/* Đến hạn hôm nay: Highlight MÀU ĐỎ nhấp nháy */
+.due-badge.due-today {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  animation: blink-today 1.2s ease-in-out infinite;
+}
+
+/* Quá hạn / Trễ hạn: Highlight MÀU ĐỎ nhấp nháy */
 .due-badge.due-overdue {
   color: #f87171;
-  background: rgba(248, 113, 113, 0.12);
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.5);
   animation: blink-overdue 1s ease-in-out infinite;
+}
+
+@keyframes blink-today {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.65; transform: scale(0.98); }
 }
 
 @keyframes blink-overdue {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.3; }
+  50%       { opacity: 0.4; }
 }
 
 /* ── App Wallet Specific ── */
@@ -1344,6 +1362,23 @@ header h1 svg {
 .pay-compact-item:hover {
   border-color: rgba(255, 255, 255, 0.2);
   background: var(--bg-card-hover);
+}
+
+.pay-compact-item.is-due-soon {
+  border-color: rgba(249, 115, 22, 0.45);
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.08) 0%, var(--bg-card) 45%);
+}
+
+.pay-compact-item.is-due-today {
+  border-color: rgba(239, 68, 68, 0.65);
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.12) 0%, var(--bg-card) 45%);
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.18);
+}
+
+.pay-compact-item.is-overdue {
+  border-color: rgba(239, 68, 68, 0.65);
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.14) 0%, var(--bg-card) 45%);
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.22);
 }
 
 .pay-compact-item.is-paused {

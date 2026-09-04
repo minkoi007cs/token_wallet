@@ -374,13 +374,13 @@ export default function PaymentSchedule() {
   // Calculate Days Remaining & Urgency for Reminder
   const getDueStatus = (dueDate: number, status: 'active' | 'paused' | 'pending_card_removal' | 'completed', currentCycleNum?: number) => {
     if (status === 'completed') {
-      return { type: 'completed', label: '✓ Đã xong & đã xóa thẻ', daysLeft: 0, badgeClass: 'due-badge due-ok' };
+      return { type: 'completed', label: '✓ Đã xong & đã xóa thẻ', daysLeft: 0, badgeClass: 'due-badge due-ok', itemClass: 'is-completed' };
     }
     if (status === 'pending_card_removal') {
-      return { type: 'pending_card_removal', label: '⚠️ Đã trả kỳ cuối - Hãy xóa thẻ!', daysLeft: 0, badgeClass: 'due-badge due-overdue' };
+      return { type: 'pending_card_removal', label: '⚠️ Đã trả kỳ cuối - Hãy xóa thẻ!', daysLeft: 0, badgeClass: 'due-badge due-overdue', itemClass: 'is-pending-removal' };
     }
     if (status === 'paused') {
-      return { type: 'paused', label: 'Tạm dừng nhắc', daysLeft: 0, badgeClass: 'due-badge' };
+      return { type: 'paused', label: 'Tạm dừng nhắc', daysLeft: 0, badgeClass: 'due-badge', itemClass: 'is-paused' };
     }
 
     const now = new Date();
@@ -394,32 +394,36 @@ export default function PaymentSchedule() {
     if (diffDays < 0) {
       return {
         type: 'overdue',
-        label: `Quá hạn ${Math.abs(diffDays)} ngày${cycleSuffix}`,
+        label: `🚨 Quá hạn ${Math.abs(diffDays)} ngày${cycleSuffix}`,
         daysLeft: diffDays,
-        badgeClass: 'due-badge due-overdue'
+        badgeClass: 'due-badge due-overdue',
+        itemClass: 'is-overdue'
       };
     }
     if (diffDays === 0) {
       return {
         type: 'due_today',
-        label: `Đến hạn hôm nay${cycleSuffix}`,
+        label: `🔥 Đến hạn hôm nay${cycleSuffix}`,
         daysLeft: 0,
-        badgeClass: 'due-badge due-soon'
+        badgeClass: 'due-badge due-today',
+        itemClass: 'is-due-today'
       };
     }
     if (diffDays <= 7) {
       return {
         type: 'due_soon',
-        label: `Sắp đến: còn ${diffDays} ngày${cycleSuffix}`,
+        label: `⏳ Còn ${diffDays} ngày${cycleSuffix}`,
         daysLeft: diffDays,
-        badgeClass: 'due-badge due-soon'
+        badgeClass: 'due-badge due-soon',
+        itemClass: 'is-due-soon'
       };
     }
     return {
       type: 'normal',
       label: `Còn ${diffDays} ngày${cycleSuffix}`,
       daysLeft: diffDays,
-      badgeClass: 'due-badge due-ok'
+      badgeClass: 'due-badge due-ok',
+      itemClass: ''
     };
   };
 
@@ -457,6 +461,7 @@ export default function PaymentSchedule() {
   const summaryMetrics = useMemo(() => {
     let activeCount = 0;
     let dueSoonCount = 0;
+    let dueTodayCount = 0;
     let overdueCount = 0;
     let pendingRemovalCount = 0;
     let totalMonthlyVND = 0;
@@ -478,6 +483,7 @@ export default function PaymentSchedule() {
         const diffDays = Math.round((target.getTime() - now.getTime()) / 86400000);
 
         if (diffDays < 0) overdueCount++;
+        else if (diffDays === 0) dueTodayCount++;
         else if (diffDays <= 7) dueSoonCount++;
 
         // Monthly cost normalize
@@ -501,8 +507,9 @@ export default function PaymentSchedule() {
       total: schedules.length,
       activeCount,
       dueSoonCount,
+      dueTodayCount,
       overdueCount,
-      pendingRemovalCount,
+      urgentCount: overdueCount + dueTodayCount,
       totalMonthlyVND: Math.round(totalMonthlyVND),
       totalMonthlyUSD: Math.round(totalMonthlyUSD * 10) / 10
     };
@@ -567,8 +574,8 @@ export default function PaymentSchedule() {
             {summaryMetrics.pendingRemovalCount > 0 && (
               <div className="pay-pill" style={{ background: 'rgba(239, 68, 68, 0.15)', padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
                 <span className="pay-pill-dot" style={{ backgroundColor: '#ef4444' }} />
-                <span className="pay-pill-label" style={{ color: '#f87171', fontWeight: 600 }}>Cần gỡ thẻ ngay:</span>
-                <strong style={{ color: '#f87171' }}>{summaryMetrics.pendingRemovalCount} dịch vụ</strong>
+                <span className="pay-pill-label" style={{ color: '#f87171', fontWeight: 600 }}>Cần gỡ thẻ:</span>
+                <strong style={{ color: '#f87171' }}>{summaryMetrics.pendingRemovalCount}</strong>
               </div>
             )}
 
@@ -584,19 +591,21 @@ export default function PaymentSchedule() {
               <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>/tháng</span>
             </div>
 
+            {/* Orange Highlight Pill: Còn 1 tuần (<= 7 ngày) */}
             <div className="pay-pill">
-              <span className="pay-pill-dot" style={{ backgroundColor: summaryMetrics.dueSoonCount > 0 ? '#facc15' : '#64748b' }} />
-              <span className="pay-pill-label">Sắp đến hạn:</span>
-              <strong style={{ color: summaryMetrics.dueSoonCount > 0 ? '#facc15' : 'inherit' }}>
+              <span className="pay-pill-dot" style={{ backgroundColor: summaryMetrics.dueSoonCount > 0 ? '#f97316' : '#64748b' }} />
+              <span className="pay-pill-label">Còn ≤ 7 ngày:</span>
+              <strong style={{ color: summaryMetrics.dueSoonCount > 0 ? '#f97316' : 'inherit' }}>
                 {summaryMetrics.dueSoonCount}
               </strong>
             </div>
 
+            {/* Red Highlight Pill: Hôm nay hoặc Quá hạn */}
             <div className="pay-pill">
-              <span className="pay-pill-dot" style={{ backgroundColor: summaryMetrics.overdueCount > 0 ? '#f87171' : '#64748b' }} />
-              <span className="pay-pill-label">Quá hạn:</span>
-              <strong style={{ color: summaryMetrics.overdueCount > 0 ? '#f87171' : 'inherit' }}>
-                {summaryMetrics.overdueCount}
+              <span className="pay-pill-dot" style={{ backgroundColor: summaryMetrics.urgentCount > 0 ? '#ef4444' : '#64748b' }} />
+              <span className="pay-pill-label">Đến hạn / Quá hạn:</span>
+              <strong style={{ color: summaryMetrics.urgentCount > 0 ? '#ef4444' : 'inherit' }}>
+                {summaryMetrics.urgentCount}
               </strong>
             </div>
 
@@ -838,7 +847,7 @@ export default function PaymentSchedule() {
             return (
               <div
                 key={item.id}
-                className={`pay-compact-item ${item.status === 'paused' ? 'is-paused' : ''} ${item.status === 'completed' ? 'is-completed' : ''} ${item.status === 'pending_card_removal' ? 'is-pending-removal' : ''}`}
+                className={`pay-compact-item ${dueInfo.itemClass} ${item.status === 'paused' ? 'is-paused' : ''} ${item.status === 'completed' ? 'is-completed' : ''} ${item.status === 'pending_card_removal' ? 'is-pending-removal' : ''}`}
               >
                 {/* Left: Icon, Title, Email & Reminder info */}
                 <div className="pay-compact-left">
