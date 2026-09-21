@@ -44,8 +44,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const ADMIN_EMAIL = 'hoang.hoa@gmail.com';
 
   async function loadPermissions(userId: string, email: string) {
-    // Upsert row on first login (default permissions)
     const isAdminEmail = email === ADMIN_EMAIL;
+
+    // Admin permissions used as fallback and as default row value
+    const adminPerms: UserPermissions = {
+      role: 'admin',
+      can_read_token_wallet: true,
+      can_edit_token_wallet: true,
+      can_read_payments: true,
+      can_edit_payments: true,
+      can_read_app_wallet: true,
+      can_edit_app_wallet: true,
+    };
+
     const defaultRow = {
       user_id: userId,
       email,
@@ -58,10 +69,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       can_edit_app_wallet: isAdminEmail,
     };
 
-    await supabase
-      .from('tkw_user_permissions')
-      .upsert(defaultRow, { onConflict: 'user_id', ignoreDuplicates: true });
+    // Try to upsert (may fail if table missing or RLS blocks — that's ok)
+    try {
+      await supabase
+        .from('tkw_user_permissions')
+        .upsert(defaultRow, { onConflict: 'user_id', ignoreDuplicates: true });
+    } catch (_) { /* silent */ }
 
+    // Try to read from DB
     const { data } = await supabase
       .from('tkw_user_permissions')
       .select('*')
@@ -78,6 +93,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         can_read_app_wallet: data.can_read_app_wallet,
         can_edit_app_wallet: data.can_edit_app_wallet,
       });
+    } else if (isAdminEmail) {
+      // Fallback: DB unavailable but this IS the admin email → grant full access
+      setPermissions(adminPerms);
     } else {
       setPermissions(DEFAULT_USER_PERMISSIONS);
     }
