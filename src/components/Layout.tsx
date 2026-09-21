@@ -59,6 +59,12 @@ export default function Layout() {
                 👥 Users
               </NavLink>
             )}
+            <NavLink
+              to="/notes"
+              className={({ isActive }) => `tab-btn ${isActive ? 'active' : ''}`}
+            >
+              📝 Ghi Chú
+            </NavLink>
           </div>
         </div>
         <div className="header-actions">

@@ -6,6 +6,7 @@ import TokenWallet from './pages/TokenWallet';
 import AppWallet from './pages/AppWallet';
 import PaymentSchedule from './pages/PaymentSchedule';
 import UserManagement from './pages/UserManagement';
+import Notes from './pages/Notes';
 
 export default function App() {
   return (
@@ -45,6 +46,9 @@ export default function App() {
 
             {/* Admin only */}
             <Route path="users" element={<UserManagement />} />
+
+            {/* Notes — public */}
+            <Route path="notes" element={<Notes />} />
           </Route>
         </Routes>
       </BrowserRouter>
