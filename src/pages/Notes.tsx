@@ -504,6 +504,122 @@ app.use(cors({
       )
     },
     {
+      id: 'local-ports',
+      icon: '🔌',
+      title: 'Quy Hoạch Port Cố Định Local',
+      content: (
+        <div className="note-content">
+          <h2>Quy Hoạch Port Cố Định Khi Chạy Nhiều App Local (Không Dùng Docker)</h2>
+          <p className="note-desc">Khi phát triển nhiều app cùng lúc trên máy local không qua Docker, việc cấu hình port cố định cho từng Frontend/Backend giúp tránh xung đột port, nhảy port ngẫu nhiên làm hỏng Google OAuth Redirect & CORS.</p>
+
+          <h3>Vì Sao Cần Port Cố Định & Strict Port?</h3>
+          <p>Mặc định Vite/Next.js sẽ tự động tăng port (ví dụ: <code>5173</code> → <code>5174</code> → <code>5175</code>) nếu port gốc bị chiếm. Điều này gây ra 2 lỗi nghiêm trọng:</p>
+          <div className="note-checklist">
+            <label className="checklist-item"><span>1. <strong>OAuth Redirect Error:</strong> Google/Supabase Auth nhảy về port cũ <code>5173</code> thay vì port mới <code>5174</code>.</span></label>
+            <label className="checklist-item"><span>2. <strong>CORS Error:</strong> Backend Express chỉ cho phép <code>localhost:5173</code> gọi API, khi Frontend tự đổi thành <code>5174</code> sẽ bị chặn CORS ngay.</span></label>
+          </div>
+
+          <h3>Bảng Quy Hoạch Port Chuẩn Danh Mục App</h3>
+          <div className="user-mgmt-table-wrap" style={{ margin: '16px 0' }}>
+            <table className="user-mgmt-table">
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left' }}>Tên App</th>
+                  <th>Frontend Local Port</th>
+                  <th>Backend API Local Port</th>
+                  <th>Cấu Hình Config</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="user-email-cell">⚡ Token Wallet</td>
+                  <td><Tag color="#10b981">http://localhost:5173</Tag></td>
+                  <td><Tag color="#64748b">N/A (Frontend Only)</Tag></td>
+                  <td>Vite (strictPort)</td>
+                </tr>
+                <tr>
+                  <td className="user-email-cell">🏡 Family Management</td>
+                  <td><Tag color="#10b981">http://localhost:5174</Tag></td>
+                  <td><Tag color="#6366f1">http://localhost:5001</Tag></td>
+                  <td>Vite + Express Monorepo</td>
+                </tr>
+                <tr>
+                  <td className="user-email-cell">🤖 BETH (Quant Bot)</td>
+                  <td><Tag color="#10b981">http://localhost:5175</Tag></td>
+                  <td><Tag color="#6366f1">http://localhost:5002</Tag></td>
+                  <td>Next.js (-p 5175)</td>
+                </tr>
+                <tr>
+                  <td className="user-email-cell">🎮 gameEngG10</td>
+                  <td><Tag color="#10b981">http://localhost:5176</Tag></td>
+                  <td><Tag color="#6366f1">http://localhost:5003</Tag></td>
+                  <td>Vite + Express</td>
+                </tr>
+                <tr>
+                  <td className="user-email-cell">🎓 AdmissionDecisionEngine</td>
+                  <td><Tag color="#10b981">http://localhost:5177</Tag></td>
+                  <td><Tag color="#6366f1">http://localhost:5004</Tag></td>
+                  <td>Vite + NestJS</td>
+                </tr>
+                <tr>
+                  <td className="user-email-cell">☕ coffee_shop_24hxh</td>
+                  <td><Tag color="#10b981">http://localhost:5178</Tag></td>
+                  <td><Tag color="#6366f1">http://localhost:5005</Tag></td>
+                  <td>Vite + NestJS</td>
+                </tr>
+                <tr>
+                  <td className="user-email-cell">📚 qlhs_dtnt</td>
+                  <td><Tag color="#10b981">http://localhost:5179</Tag></td>
+                  <td><Tag color="#6366f1">http://localhost:5006</Tag></td>
+                  <td>Vite + Express</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>1. Khóa Port Cố Định Trong Vite (<code>vite.config.ts</code>)</h3>
+          <p>Dùng thuộc tính <code>strictPort: true</code> để ép Vite báo lỗi ngay nếu port đang bị chiếm, không tự ý đổi port:</p>
+          <CodeBlock lang="typescript" code={`// vite.config.ts (ví dụ cho Family Management - Port 5174)
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5174,
+    strictPort: true, // Ép không nhảy sang 5175 nếu 5174 đang bận
+  },
+});`} />
+
+          <h3>2. Khóa Port Cố Định Trong Next.js (<code>package.json</code>)</h3>
+          <CodeBlock lang="json" code={`// package.json (ví dụ cho BETH App - Port 5175)
+"scripts": {
+  "dev": "next dev -p 5175",
+  "build": "next build",
+  "start": "next start -p 5175"
+}`} />
+
+          <h3>3. Cấu Hình Port cho Express / NestJS Backend (<code>.env.local</code>)</h3>
+          <CodeBlock lang="typescript" code={`// apps/api/src/index.ts
+const PORT = process.env.PORT || 5001; // Port riêng cho Backend từng App
+
+app.listen(PORT, () => {
+  console.log(\`Backend API running on http://localhost:\${PORT}\`);
+});`} />
+
+          <h3>4. Khai Báo Danh Sách Port vào Supabase Auth Redirect Whitelist</h3>
+          <Alert type="tip">Thêm toàn bộ dải port từ 5173 đến 5179 vào Supabase Dashboard → Auth → URL Configuration để mọi App Local đều đăng nhập mượt mà!</Alert>
+          <CodeBlock lang="text" code={`http://localhost:5173/**
+http://localhost:5174/**
+http://localhost:5175/**
+http://localhost:5176/**
+http://localhost:5177/**
+http://localhost:5178/**
+http://localhost:5179/**`} />
+        </div>
+      )
+    },
+    {
       id: 'webapp-checklist',
       icon: '✅',
       title: 'Checklist Web App chuẩn',
