@@ -51,8 +51,63 @@ function Alert({ type, children }: { type: 'tip' | 'warn' | 'info'; children: Re
 
 export default function Notes() {
   const [activeSection, setActiveSection] = useState('google-auth');
+  const [copiedAll, setCopiedAll] = useState(false);
+
+  function copyFullChecklist() {
+    const markdown = `# 📋 PROJECT AUDIT CHECKLIST FOR AI REVIEW & CODE VALIDATION
+
+Hãy kiểm tra toàn bộ mã nguồn và cấu hình của dự án hiện tại đối chiếu với danh sách các tiêu chuẩn kỹ thuật bắt buộc dưới đây:
+
+## 1. 🔑 Google Login & Supabase Auth Integration
+- [ ] Bật Google OAuth Provider trong Supabase Dashboard với Authorized Redirect URI \`https://<project-ref>.supabase.co/auth/v1/callback\`
+- [ ] Frontend dùng \`@supabase/supabase-js\` để tạo \`supabaseClient\` từ \`VITE_SUPABASE_URL\` & \`VITE_SUPABASE_ANON_KEY\`
+- [ ] Nút login gọi \`signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })\`
+- [ ] Lắng nghe session thay đổi tự động qua \`supabase.auth.onAuthStateChange\`
+- [ ] Kiểm tra session trên mọi Protected Route trước khi render UI
+- [ ] Khai báo Row Level Security (RLS) cho tất cả bảng DB liên quan đến User (\`auth.uid() = user_id\`)
+
+## 2. 🚀 Monorepo & Vercel Deployment
+- [ ] Cấu trúc folder chuẩn Monorepo (\`apps/web\`, \`apps/api\`, \`packages/shared\`)
+- [ ] Root Directory trong Vercel Project trỏ chính xác tới thư mục app (\`apps/web\` hoặc \`apps/api\`)
+- [ ] Cấu hình biến môi trường Frontend có tiền tố \`VITE_\` (hoặc \`NEXT_PUBLIC_\`) trong Vercel Settings
+- [ ] Cấu hình \`vercel.json\` cho Backend Serverless (Express/NestJS)
+- [ ] Cấu hình Custom Domain CNAME \`cname.vercel-dns.com\` và SSL Certificate
+
+## 3. 🔌 Quy Hoạch Port Cố Định Cho Local Dev (Non-Docker)
+- [ ] Khai báo \`port\` cố định cho Frontend trong \`vite.config.ts\` (hoặc \`package.json\` \`next dev -p <port>\`)
+- [ ] Bật \`strictPort: true\` trong \`vite.config.ts\` để ép không tự đổi port khi port bận
+- [ ] Cấu hình \`PORT\` môi trường riêng cho Backend API Express / NestJS (e.g. 5001, 5002...)
+- [ ] Thêm dải port local \`http://localhost:<port>/**\` vào Supabase Auth Additional Redirect URLs Whitelist
+
+## 4. 🔄 Shared Auth & Chống Redirect Sai Sub-App
+- [ ] Khai báo chính xác domain Production và Localhost của từng sub-app vào Supabase Auth Redirect URLs Whitelist
+- [ ] Luôn truyền \`redirectTo: window.location.origin\` (hoặc exact callback path) khi gọi \`signInWithOAuth\`
+- [ ] Áp dụng RLS / App Scope Isolation (e.g., bảng \`user_app_access\`) nếu cần kiểm soát quyền mở từng app
+
+## 5. 💻 Local Dev với Remote Supabase DB
+- [ ] File \`.env.local\` ở máy cá nhân trỏ tới Remote Supabase Project (\`*.supabase.co\`)
+- [ ] Cấu hình CORS cho Backend API Express/NestJS cho phép origin \`http://localhost:<port>\` gọi API
+- [ ] Test quy trình Google Login tại Localhost quay về đúng domain local \`http://localhost:<port>\`
+
+## 6. 🗄️ Supabase Schema & Realtime Best Practices
+- [ ] Tạo bảng \`public.profiles\` link với \`auth.users(id)\` qua Postgres Trigger \`on_auth_user_created\`
+- [ ] Áp dụng đúng RLS Pattern: User read/write own data (\`auth.uid() = user_id\`), Admin full access
+- [ ] Dùng \`supabase.channel()\` cho Realtime subscriptions và cleanup khi component unmount
+- [ ] Upload file lên Supabase Storage với Bucket public/private policy phù hợp
+
+## 7. ⚙️ Code Quality & Production Readiness
+- [ ] Đạt chuẩn TypeScript strict mode (noImplicitAny, strictNullChecks)
+- [ ] Sử dụng \`type-only imports\` khi bật \`verbatimModuleSyntax\`
+- [ ] Có Loading state và Error boundaries cho mọi async data fetch
+- [ ] Không commit file \`.env.local\` hoặc secret keys vào Git repository
+`;
+    navigator.clipboard.writeText(markdown);
+    setCopiedAll(true);
+    setTimeout(() => setCopiedAll(false), 2500);
+  }
 
   const sections: Section[] = [
+
     {
       id: 'google-auth',
       icon: '🔑',
@@ -699,6 +754,15 @@ npm install react-router-dom`} />
     <div className="notes-page">
       <aside className="notes-sidebar">
         <div className="notes-sidebar-title">📝 Ghi Chú Kỹ Thuật</div>
+        <div style={{ padding: '0 12px 12px' }}>
+          <button
+            className={`btn-copy-all-checklist ${copiedAll ? 'copied' : ''}`}
+            onClick={copyFullChecklist}
+            title="Copy toàn bộ ghi chú dưới dạng Markdown Checklist để cấp cho AI / Agent Audit code dự án"
+          >
+            {copiedAll ? '✓ Copied Full Checklist!' : '📋 Copy Audit Checklist'}
+          </button>
+        </div>
         <nav>
           {sections.map(s => (
             <button
