@@ -90,6 +90,7 @@ Hãy kiểm tra toàn bộ mã nguồn và cấu hình của dự án hiện t�
 - [ ] Test quy trình Google Login tại Localhost quay về đúng domain local \`http://localhost:<port>\`
 
 ## 6. 🗄️ Supabase Schema & Realtime Best Practices
+- [ ] Mọi bảng Database tạo mới BẮT BUỘC phải có tiền tố (Project Prefix) riêng biệt (e.g. tkw_*, fml_*, lnd_*, beth_*) để tránh xung đột tên bảng khi dùng chung Supabase DB
 - [ ] Tạo bảng \`public.profiles\` link với \`auth.users(id)\` qua Postgres Trigger \`on_auth_user_created\`
 - [ ] Áp dụng đúng RLS Pattern: User read/write own data (\`auth.uid() = user_id\`), Admin full access
 - [ ] Dùng \`supabase.channel()\` cho Realtime subscriptions và cleanup khi component unmount
@@ -347,6 +348,64 @@ vercel --cwd apps/web --prod`} />
       content: (
         <div className="note-content">
           <h2>Supabase DB Schema chuẩn</h2>
+
+          <h3>⚠️ Quy Tắc Đặt Tên Bảng (Project Table Prefix)</h3>
+          <Alert type="warn">
+            <strong>BẮT BUỘC:</strong> Khi nhiều Web App dùng chung 1 Supabase PostgreSQL Database, mọi bảng tạo mới <strong>BẮT BUỘC phải có tiền tố (Prefix) của dự án</strong> để tránh xung đột tên bảng và đè dữ liệu của nhau!
+          </Alert>
+          <div className="user-mgmt-table-wrap" style={{ margin: '16px 0' }}>
+            <table className="user-mgmt-table">
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left' }}>Dự Án</th>
+                  <th>Project Prefix</th>
+                  <th style={{ textAlign: 'left' }}>Ví Dụ Bảng Tạo Trong DB</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="user-email-cell">⚡ Token Wallet</td>
+                  <td><Tag color="#10b981">tkw_</Tag></td>
+                  <td style={{ textAlign: 'left' }}><code>tkw_app_projects</code>, <code>tkw_user_permissions</code></td>
+                </tr>
+                <tr>
+                  <td className="user-email-cell">🏡 Family Management</td>
+                  <td><Tag color="#10b981">fml_</Tag></td>
+                  <td style={{ textAlign: 'left' }}><code>fml_members</code>, <code>fml_transactions</code>, <code>fml_tasks</code></td>
+                </tr>
+                <tr>
+                  <td className="user-email-cell">🤖 BETH (Quant Bot)</td>
+                  <td><Tag color="#10b981">beth_</Tag></td>
+                  <td style={{ textAlign: 'left' }}><code>beth_trades</code>, <code>beth_bot_config</code>, <code>beth_signals</code></td>
+                </tr>
+                <tr>
+                  <td className="user-email-cell">📚 LnD Portal</td>
+                  <td><Tag color="#10b981">lnd_</Tag></td>
+                  <td style={{ textAlign: 'left' }}><code>lnd_employees</code>, <code>lnd_courses</code>, <code>lnd_learning_progress</code></td>
+                </tr>
+                <tr>
+                  <td className="user-email-cell">🎓 AdmissionDecisionEngine</td>
+                  <td><Tag color="#10b981">ade_</Tag></td>
+                  <td style={{ textAlign: 'left' }}><code>ade_schools</code>, <code>ade_score_cutoffs</code></td>
+                </tr>
+                <tr>
+                  <td className="user-email-cell">🎮 gameEngG10</td>
+                  <td><Tag color="#10b981">g10_</Tag></td>
+                  <td style={{ textAlign: 'left' }}><code>g10_students</code>, <code>g10_quizzes</code></td>
+                </tr>
+                <tr>
+                  <td className="user-email-cell">☕ coffee_shop_24hxh</td>
+                  <td><Tag color="#10b981">coffee_</Tag></td>
+                  <td style={{ textAlign: 'left' }}><code>coffee_products</code>, <code>coffee_orders</code></td>
+                </tr>
+                <tr>
+                  <td className="user-email-cell">📚 qlhs_dtnt</td>
+                  <td><Tag color="#10b981">dtnt_</Tag></td>
+                  <td style={{ textAlign: 'left' }}><code>dtnt_students</code>, <code>dtnt_evaluations</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <h3>Bảng users mở rộng (profile)</h3>
           <Alert type="info">Supabase có sẵn bảng <code>auth.users</code> nhưng không được chỉnh sửa trực tiếp. Tạo bảng <code>public.profiles</code> mirror sang.</Alert>
@@ -814,6 +873,7 @@ cleanDatabase().catch(console.error);`} />
           <h3>🗄️ Supabase</h3>
           <div className="note-checklist">
             {[
+              'Mọi bảng DB tạo mới bắt buộc phải có Project Prefix riêng (tkw_*, fml_*, lnd_*, beth_*)',
               'RLS bật cho mọi bảng (mặc định Supabase tắt RLS)',
               'Dùng anon key ở frontend, service_role key chỉ ở server',
               'Trigger auto-create profile khi user mới đăng ký',

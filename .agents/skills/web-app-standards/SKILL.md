@@ -51,6 +51,20 @@ This skill provides the mandatory architectural patterns, security standards, lo
   );
   ```
 
+### Mandatory Project Table Prefix Convention
+When multiple web applications share a single Supabase PostgreSQL Database, **EVERY CREATED TABLE MUST HAVE A PROJECT PREFIX** to prevent naming collisions across applications.
+
+| Project Name | Prefix | Example Table Names |
+|:---|:---|:---|
+| **Token Wallet** | `tkw_` | `tkw_app_projects`, `tkw_user_permissions` |
+| **Family Management** | `fml_` | `fml_members`, `fml_transactions`, `fml_tasks` |
+| **BETH (Quant Bot)** | `beth_` | `beth_trades`, `beth_bot_config`, `beth_signals` |
+| **LnD Portal** | `lnd_` | `lnd_employees`, `lnd_courses`, `lnd_learning_progress` |
+| **AdmissionDecisionEngine** | `ade_` | `ade_schools`, `ade_score_cutoffs` |
+| **gameEngG10** | `g10_` | `g10_students`, `g10_quizzes` |
+| **coffee_shop_24hxh** | `coffee_` | `coffee_products`, `coffee_orders` |
+| **qlhs_dtnt** | `dtnt_` | `dtnt_students`, `dtnt_evaluations` |
+
 ---
 
 ## 🚀 2. Monorepo Architecture & Vercel Deployment
