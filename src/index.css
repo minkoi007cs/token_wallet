@@ -1943,4 +1943,131 @@ header h1 svg {
   transform: translateX(3px);
 }
 
+/* ── Health Check & Failed Card Highlight ── */
+.portfolio-card.is-failed {
+  border-color: rgba(239, 68, 68, 0.6) !important;
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.08) 0%, var(--bg-card) 100%) !important;
+  box-shadow: 0 4px 18px rgba(239, 68, 68, 0.18) !important;
+}
+
+.portfolio-card.is-failed::before {
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%) !important;
+  height: 4.5px !important;
+  opacity: 1 !important;
+}
+
+.portfolio-card.is-failed:hover {
+  border-color: #ef4444 !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 22px rgba(239, 68, 68, 0.4) !important;
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.12) 0%, var(--bg-card-hover) 100%) !important;
+}
+
+.status-badge-failed {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.18rem 0.55rem;
+  border-radius: 4px;
+  background: rgba(239, 68, 68, 0.22);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  letter-spacing: 0.03em;
+  animation: blink-failed 2s ease-in-out infinite;
+}
+
+@keyframes blink-failed {
+  0%, 100% { opacity: 1; border-color: rgba(239, 68, 68, 0.7); }
+  50% { opacity: 0.75; border-color: rgba(239, 68, 68, 0.3); }
+}
+
+.status-badge-healthy {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.status-badge-checking {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.health-check-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.health-check-btn:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+.health-check-btn.has-failed {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+
+.health-check-btn.has-failed:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin-icon {
+  animation: spin-slow 1s linear infinite;
+}
+
+.failed-summary-pill {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  color: #f87171;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: var(--transition-smooth);
+}
+
+.failed-summary-pill:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+
 

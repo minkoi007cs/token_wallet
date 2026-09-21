@@ -128,17 +128,17 @@ const INITIAL_APP_DATA: AppProject[] = [
   },
   {
     id: 'app-github-family',
-    name: 'family-management',
+    name: 'Family Management',
     developer: 'Hoa Hoang',
     github: 'https://github.com/johnnyhoang/family-management',
-    frontendUrl: 'https://mikoi-family.vercel.app',
-    backendUrl: 'https://mikoi-family-api.vercel.app',
+    frontendUrl: 'https://family.minkoi.org',
+    backendUrl: '',
     hosting: 'Vercel',
     database: 'Supabase (PostgreSQL)',
     type: 'Web App',
-    description: 'Ứng dụng quản lý sinh hoạt, tài chính và công việc gia đình.',
-    techStack: 'TypeScript, Vite, Express, PostgreSQL',
-    techNotes: 'Frontend Mikoi Family tại mikoi-family.vercel.app, Backend API tại mikoi-family-api.vercel.app.',
+    description: 'Ứng dụng quản lý sinh hoạt, tài chính và công việc gia đình — deploy monorepo tại family.minkoi.org.',
+    techStack: 'TypeScript, Vite, React, PostgreSQL, Supabase',
+    techNotes: 'Monorepo deploy trên Vercel, URL chính thức: family.minkoi.org. Frontend và Backend được tích hợp chung trong 1 repo.',
     backlog: [],
     status: 'Development',
     priority: 'Medium',
@@ -303,11 +303,16 @@ export default function AppWallet() {
 
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
 
+  // Health Check State
+  const [healthMap, setHealthMap] = useState<Record<string, { status: 'checking' | 'healthy' | 'failed' | 'no_url'; error?: string }>>({});
+  const [isCheckingAllHealth, setIsCheckingAllHealth] = useState(false);
+
   // Search, Filter & Sort states
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [priorityFilter, setPriorityFilter] = useState('ALL');
+  const [healthFilter, setHealthFilter] = useState<'ALL' | 'HEALTHY' | 'FAILED'>('ALL');
   const [visibilityFilter, setVisibilityFilter] = useState<'ALL' | 'ACTIVE' | 'DISABLED'>('ALL');
   const [sortBy, setSortBy] = useState<'lastUpdated' | 'name' | 'priority' | 'backlog'>('lastUpdated');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -319,12 +324,97 @@ export default function AppWallet() {
   const [newBacklogAssignee, setNewBacklogAssignee] = useState('');
   const [newBacklogPriority, setNewBacklogPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
 
+  // URL accessibility checker
+  const checkSingleAppHealth = async (app: AppProject): Promise<{ status: 'healthy' | 'failed' | 'no_url'; error?: string }> => {
+    const url = app.frontendUrl || app.backendUrl;
+    if (!url || !url.trim()) {
+      return { status: 'no_url', error: 'Chưa có URL' };
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+      try {
+        const res = await fetch(url, {
+          method: 'GET',
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (res.status >= 400 && res.status !== 401 && res.status !== 403) {
+          return { status: 'failed', error: `HTTP ${res.status}` };
+        }
+        return { status: 'healthy' };
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        // Fallback to mode: no-cors to test server DNS & reachable connectivity across origins
+        const fallbackCtrl = new AbortController();
+        const fallbackTimeoutId = setTimeout(() => fallbackCtrl.abort(), 6000);
+        try {
+          await fetch(url, {
+            method: 'HEAD',
+            mode: 'no-cors',
+            signal: fallbackCtrl.signal,
+          });
+          clearTimeout(fallbackTimeoutId);
+          return { status: 'healthy' };
+        } catch {
+          clearTimeout(fallbackTimeoutId);
+          return { status: 'failed', error: 'Không thể truy cập' };
+        }
+      }
+    } catch {
+      return { status: 'failed', error: 'Lỗi kết nối' };
+    }
+  };
+
+  const handleRunHealthCheckAll = async (targetApps?: AppProject[]) => {
+    const list = targetApps || apps;
+    if (list.length === 0) return;
+
+    setIsCheckingAllHealth(true);
+    
+    // Set all to checking state
+    setHealthMap(prev => {
+      const next = { ...prev };
+      list.forEach(a => {
+        next[a.id] = { status: 'checking' };
+      });
+      return next;
+    });
+
+    // Run parallel checks
+    await Promise.all(
+      list.map(async (app) => {
+        const result = await checkSingleAppHealth(app);
+        setHealthMap(prev => ({
+          ...prev,
+          [app.id]: result
+        }));
+      })
+    );
+
+    setIsCheckingAllHealth(false);
+  };
+
+  // Auto-check health when apps are loaded
+  useEffect(() => {
+    if (isLoaded && apps.length > 0) {
+      handleRunHealthCheckAll(apps);
+    }
+  }, [isLoaded]);
+
   // Available unique types from apps
   const availableTypes = useMemo(() => {
     const defaultTypes = ['Web App', 'Android App', 'iOS App', 'Desktop App', 'Other'];
     const customTypes = apps.map(a => a.type).filter(Boolean);
     return Array.from(new Set([...defaultTypes, ...customTypes]));
   }, [apps]);
+
+  // Failed apps count
+  const failedAppsCount = useMemo(() => {
+    return apps.filter(a => healthMap[a.id]?.status === 'failed').length;
+  }, [apps, healthMap]);
 
   // Check if any filter or search is active
   const isFilterActive = useMemo(() => {
@@ -333,15 +423,17 @@ export default function AppWallet() {
       statusFilter !== 'ALL' ||
       typeFilter !== 'ALL' ||
       priorityFilter !== 'ALL' ||
+      healthFilter !== 'ALL' ||
       visibilityFilter !== 'ALL'
     );
-  }, [searchQuery, statusFilter, typeFilter, priorityFilter, visibilityFilter]);
+  }, [searchQuery, statusFilter, typeFilter, priorityFilter, healthFilter, visibilityFilter]);
 
   const handleResetFilters = () => {
     setSearchQuery('');
     setStatusFilter('ALL');
     setTypeFilter('ALL');
     setPriorityFilter('ALL');
+    setHealthFilter('ALL');
     setVisibilityFilter('ALL');
     setSortBy('lastUpdated');
     setSortOrder('desc');
@@ -382,7 +474,15 @@ export default function AppWallet() {
           return false;
         }
 
-        // 5. Visibility Filter
+        // 5. Health Filter
+        if (healthFilter === 'FAILED' && healthMap[app.id]?.status !== 'failed') {
+          return false;
+        }
+        if (healthFilter === 'HEALTHY' && healthMap[app.id]?.status !== 'healthy') {
+          return false;
+        }
+
+        // 6. Visibility Filter
         if (visibilityFilter === 'ACTIVE' && app.isDisabled) {
           return false;
         }
@@ -408,7 +508,7 @@ export default function AppWallet() {
 
         return sortOrder === 'asc' ? comparison : -comparison;
       });
-  }, [apps, searchQuery, statusFilter, typeFilter, priorityFilter, visibilityFilter, sortBy, sortOrder]);
+  }, [apps, searchQuery, statusFilter, typeFilter, priorityFilter, healthFilter, visibilityFilter, sortBy, sortOrder, healthMap]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -509,7 +609,6 @@ export default function AppWallet() {
     setActiveModal(current => {
       if (current?.type === 'project-detail' && current.app.id === appId) {
         const updatedApp = apps.find(a => a.id === appId);
-        // The state isn't updated yet in this closure, so we manually apply it to the modal
         if (updatedApp) {
           const newBacklogs = updatedApp.backlog.map(b => {
             if (b.id !== backlogId) return b;
@@ -527,8 +626,6 @@ export default function AppWallet() {
       return current;
     });
   };
-
-
 
   const handleSaveApp = () => {
     if (!formData.name) return; // Basic validation
@@ -642,15 +739,33 @@ export default function AppWallet() {
     <div className="app-wallet-container" style={{ padding: '0', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
       {/* STICKY HEADER & FILTER TOOLBAR */}
       <div className="app-wallet-sticky-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>My Apps Portfolio</h2>
-          <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Add New App
-          </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>My Apps Portfolio</h2>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            {/* Health check button */}
+            <button
+              className={`health-check-btn ${failedAppsCount > 0 ? 'has-failed' : ''}`}
+              onClick={() => handleRunHealthCheckAll()}
+              disabled={isCheckingAllHealth}
+              title="Kiểm tra trạng thái truy cập thực tế của tất cả các app URL"
+            >
+              <svg className={isCheckingAllHealth ? 'spin-icon' : ''} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+              <span>{isCheckingAllHealth ? 'Đang kiểm tra...' : 'Kiểm Tra Truy Cập'}</span>
+            </button>
+
+            <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Add New App
+            </button>
+          </div>
         </div>
 
         {/* FILTER, SEARCH & SORT TOOLBAR */}
@@ -695,6 +810,18 @@ export default function AppWallet() {
               <option value="Development">Development</option>
               <option value="Maintenance">Maintenance</option>
               <option value="Deprecated">Deprecated</option>
+            </select>
+
+            {/* Health Filter */}
+            <select
+              className={`toolbar-select ${healthFilter !== 'ALL' ? 'active-filter' : ''}`}
+              value={healthFilter}
+              onChange={(e) => setHealthFilter(e.target.value as any)}
+              title="Filter by Health Access"
+            >
+              <option value="ALL">All Health</option>
+              <option value="FAILED">🚨 Failed Only ({failedAppsCount})</option>
+              <option value="HEALTHY">🟢 Online Only</option>
             </select>
 
             {/* Type Filter */}
@@ -774,6 +901,16 @@ export default function AppWallet() {
               Showing <strong style={{ color: 'var(--text-main)' }}>{filteredAndSortedApps.length}</strong> of {apps.length} apps
             </span>
 
+            {failedAppsCount > 0 && (
+              <span
+                className="failed-summary-pill"
+                onClick={() => setHealthFilter(healthFilter === 'FAILED' ? 'ALL' : 'FAILED')}
+                title="Bấm để lọc chỉ các app bị lỗi truy cập"
+              >
+                🚨 {failedAppsCount} app bị lỗi truy cập (Failed)
+              </span>
+            )}
+
             {/* Active Chips */}
             {isFilterActive && (
               <div className="filter-chips-list">
@@ -781,6 +918,12 @@ export default function AppWallet() {
                   <span className="filter-chip">
                     Search: "{searchQuery.trim()}"
                     <span className="filter-chip-remove" onClick={() => setSearchQuery('')}>✕</span>
+                  </span>
+                )}
+                {healthFilter !== 'ALL' && (
+                  <span className="filter-chip" style={{ background: healthFilter === 'FAILED' ? 'rgba(239, 68, 68, 0.2)' : undefined, color: healthFilter === 'FAILED' ? '#f87171' : undefined }}>
+                    Health: {healthFilter === 'FAILED' ? 'Failed Only' : 'Online Only'}
+                    <span className="filter-chip-remove" onClick={() => setHealthFilter('ALL')}>✕</span>
                   </span>
                 )}
                 {statusFilter !== 'ALL' && (
@@ -833,21 +976,27 @@ export default function AppWallet() {
             .map(t => t.trim())
             .filter(Boolean);
 
+          const health = healthMap[app.id];
+          const isFailed = health?.status === 'failed';
+
           return (
             <div
               key={app.id}
-              className={`portfolio-card ${statusClass} ${app.isDisabled ? 'disabled' : ''}`}
+              className={`portfolio-card ${statusClass} ${isFailed ? 'is-failed' : ''} ${app.isDisabled ? 'disabled' : ''}`}
               onClick={() => handleCardClick(app)}
-              title={app.frontendUrl ? `Open app: ${app.frontendUrl}` : (app.backendUrl ? `Open API: ${app.backendUrl}` : `Open ${app.name}`)}
+              title={isFailed ? `[LỖI TRUY CẬP: ${health?.error || 'Không thể kết nối'}] Bấm để thử mở: ${app.frontendUrl || app.backendUrl || app.name}` : (app.frontendUrl ? `Open app: ${app.frontendUrl}` : (app.backendUrl ? `Open API: ${app.backendUrl}` : `Open ${app.name}`))}
             >
               {/* Header: App Avatar, Title, Dev, Edit & Action buttons */}
               <div className="portfolio-card-header">
                 <div className="portfolio-header-left">
-                  <div className="portfolio-app-avatar">
+                  <div className="portfolio-app-avatar" style={{ position: 'relative' }}>
                     {getInitials(app.name)}
+                    {isFailed && (
+                      <span style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#ef4444', border: '2px solid var(--bg-card)' }} title="Lỗi truy cập" />
+                    )}
                   </div>
                   <div className="portfolio-title-group">
-                    <h3 className="portfolio-app-name" title={app.name}>
+                    <h3 className="portfolio-app-name" title={app.name} style={{ color: isFailed ? '#f87171' : undefined }}>
                       {app.name}
                     </h3>
                     <div className="portfolio-app-dev">
@@ -897,13 +1046,21 @@ export default function AppWallet() {
                       <div className="action-dropdown" style={{
                         position: 'absolute', top: '100%', right: '0', backgroundColor: 'var(--bg-elevated)', 
                         border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', 
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.4)', minWidth: '170px', zIndex: 50, padding: '0.5rem 0'
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.4)', minWidth: '180px', zIndex: 50, padding: '0.5rem 0'
                       }} onClick={(e) => e.stopPropagation()}>
                         <div className="dropdown-item" onClick={() => { handleOpenModal(app); setOpenActionMenuId(null); }}>
                           ✏️ Edit App
                         </div>
                         <div className="dropdown-item" onClick={() => { setActiveModal({ type: 'project-detail', app }); setOpenActionMenuId(null); }}>
                           📋 View Details & Tasks
+                        </div>
+                        <div className="dropdown-item" onClick={async () => {
+                          setOpenActionMenuId(null);
+                          setHealthMap(prev => ({ ...prev, [app.id]: { status: 'checking' } }));
+                          const res = await checkSingleAppHealth(app);
+                          setHealthMap(prev => ({ ...prev, [app.id]: res }));
+                        }}>
+                          🔄 Re-check Access Health
                         </div>
                         {app.database?.toLowerCase().includes('supabase') && (
                           <div className="dropdown-item" onClick={handleRestartData}>
@@ -919,8 +1076,25 @@ export default function AppWallet() {
                 </div>
               </div>
 
-              {/* Badges Row: Status, Priority, Type, Hosting */}
+              {/* Badges Row: Health status, Status, Priority, Type, Hosting */}
               <div className="portfolio-badges-row">
+                {/* Real-time Health Status Badge */}
+                {isFailed && (
+                  <span className="status-badge-failed" title={`Lỗi truy cập: ${health?.error || 'Không phản hồi'}`}>
+                    🚨 FAILED {health?.error ? `(${health.error})` : ''}
+                  </span>
+                )}
+                {health?.status === 'healthy' && (
+                  <span className="status-badge-healthy" title="Đang hoạt động bình thường">
+                    🟢 ONLINE
+                  </span>
+                )}
+                {health?.status === 'checking' && (
+                  <span className="status-badge-checking" title="Đang kiểm tra kết nối...">
+                    🔄 CHECKING
+                  </span>
+                )}
+
                 <span className={`status-badge ${(app.status || 'development').toLowerCase()}`}>
                   {app.status || 'Development'}
                 </span>
@@ -971,12 +1145,24 @@ export default function AppWallet() {
               {/* Footer: URLs & Quick Actions */}
               <div className="portfolio-footer">
                 <div className="portfolio-footer-top">
-                  <div className="portfolio-url-preview" title={app.frontendUrl || app.backendUrl || app.github || 'No URL configured'}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <line x1="2" y1="12" x2="22" y2="12"></line>
-                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                    </svg>
+                  <div
+                    className="portfolio-url-preview"
+                    style={{ color: isFailed ? '#f87171' : undefined }}
+                    title={isFailed ? `Lỗi truy cập: ${health?.error || 'Không thể kết nối'}` : (app.frontendUrl || app.backendUrl || app.github || 'No URL configured')}
+                  >
+                    {isFailed ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                      </svg>
+                    ) : (
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                      </svg>
+                    )}
                     <span>
                       {app.frontendUrl
                         ? app.frontendUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')
@@ -1039,8 +1225,11 @@ export default function AppWallet() {
                     <span>Tasks: {app.backlog.filter(b => b.isCompleted).length}/{app.backlog.length}</span>
                   </div>
 
-                  <div className="portfolio-launch-hint">
-                    <span>Open App</span>
+                  <div
+                    className="portfolio-launch-hint"
+                    style={{ color: isFailed ? '#f87171' : undefined }}
+                  >
+                    <span>{isFailed ? '⚠️ Lỗi Truy Cập' : 'Open App'}</span>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="7" y1="17" x2="17" y2="7"></line>
                       <polyline points="7 7 17 7 17 17"></polyline>
