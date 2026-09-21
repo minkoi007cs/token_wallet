@@ -1,0 +1,260 @@
+---
+name: web-app-standards
+description: >-
+  Engineering standards, architecture rules, Google OAuth + Supabase Auth patterns,
+  Vercel Monorepo deployment guidelines, fixed port allocation table, mock seed data scripts,
+  and clean DB reset workflows for all web applications developed by johnnyhoang.
+---
+
+# Web Application Engineering Standards & Architecture Guide (Release-Ready for johnnyhoang)
+
+This skill provides the mandatory architectural patterns, security standards, local development configurations, and deployment guidelines for all web applications in the workspace ecosystem.
+
+---
+
+## 🔑 1. Google OAuth & Supabase Auth Integration
+
+### Authentication Architecture
+- **Auth Broker:** Supabase Auth (Google Provider). Frontend apps never store or process raw passwords.
+- **Provider Setup:**
+  - Google Cloud Console: OAuth 2.0 Web Client ID.
+  - Authorized Redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`
+- **Frontend Integration Pattern:**
+  - Client Instance: Use `@supabase/supabase-js` initialized with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+  - Sign-in call:
+    ```typescript
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    });
+    ```
+  - State Listener: Use `supabase.auth.onAuthStateChange((_event, session) => ...)` to reactively update user session.
+
+### Row Level Security (RLS) & Access Control
+- Every table containing user data MUST have Row Level Security enabled (`ALTER TABLE <table> ENABLE ROW LEVEL SECURITY;`).
+- Standard Policy Patterns:
+  ```sql
+  -- User owns row
+  CREATE POLICY "Users manage own data" ON <table>
+    FOR ALL USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+  -- Public read, authenticated write
+  CREATE POLICY "Public read" ON <table> FOR SELECT USING (true);
+  CREATE POLICY "Auth write" ON <table> FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+  -- Admin role check
+  CREATE POLICY "Admin full access" ON <table> FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+  ```
+
+---
+
+## 🚀 2. Monorepo Architecture & Vercel Deployment
+
+### Directory Layout
+```text
+my-monorepo/
+├── apps/
+│   ├── web/          ← Frontend (React / Vite / Next.js)
+│   │   ├── package.json
+│   │   └── src/
+│   └── api/          ← Backend Serverless API (Express / NestJS)
+│       ├── package.json
+│       └── src/
+├── packages/
+│   └── shared/       ← Shared DTOs, types, constants
+│       └── package.json
+├── package.json      ← Root workspace configuration
+└── turbo.json        ← Turborepo pipeline configuration
+```
+
+### Vercel Deployment Rules
+- Each application inside `apps/` MUST be created as its own Vercel Project.
+- **Root Directory:** Set explicitly to `apps/web` or `apps/api` in Vercel Project Settings.
+- **Frontend Environment Variables:** Use `VITE_` prefix (Vite) or `NEXT_PUBLIC_` (Next.js) for browser exposure.
+- **Serverless API Config (`apps/api/vercel.json`):**
+  ```json
+  {
+    "version": 2,
+    "builds": [{ "src": "dist/main.js", "use": "@vercel/node" }],
+    "routes": [{ "src": "/(.*)", "dest": "dist/main.js" }]
+  }
+  ```
+- **Custom Domain:** Configure CNAME `cname.vercel-dns.com` for production domains (e.g. `family.minkoi.org`).
+
+---
+
+## 🔌 3. Fixed Local Port Allocation Table (Non-Docker)
+
+To prevent port conflicts, broken OAuth callbacks, and CORS errors when running multiple local applications simultaneously without Docker, strictly adhere to the fixed port allocation table below:
+
+| Application Name | App Path | Frontend Local URL | Backend API Local URL | Config Method |
+|:---|:---|:---|:---|:---|
+| **Token Wallet** | `TokenWalet` | `http://localhost:5173` | N/A (Frontend Only) | `vite.config.ts` (`strictPort: true`) |
+| **Family Management** | `family` | `http://localhost:5174` | `http://localhost:5001` | Vite Monorepo + Express |
+| **BETH (Quant Bot)** | `BETH` | `http://localhost:5175` | `http://localhost:5002` | `package.json` (`next dev -p 5175`) |
+| **gameEngG10** | `gameEngG10` | `http://localhost:5176` | `http://localhost:5003` | `vite.config.ts` (`strictPort: true`) |
+| **AdmissionDecisionEngine** | `AdmissionDecisionEngine` | `http://localhost:5177` | `http://localhost:5004` | Vite + NestJS |
+| **coffee_shop_24hxh** | `coffee24h` / `coffee_shop_24hxh` | `http://localhost:5178` | `http://localhost:5005` | Vite + NestJS |
+| **qlhs_dtnt** | `dtnt` | `http://localhost:5179` | `http://localhost:5006` | `vite.config.js` (`strictPort: true`) |
+| **gous** | `gous` | `http://localhost:5180` | `http://localhost:5007` | Vite + Express |
+
+### Enforcement in Vite (`vite.config.ts`)
+```typescript
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5174,
+    strictPort: true, // Throws an error immediately if port is in use instead of auto-incrementing
+  },
+});
+```
+
+---
+
+## 🔄 4. Multi-App Auth Isolation & Redirect Prevention
+
+### Cause of Misdirection
+When multiple apps share one Supabase Auth instance, Supabase falls back to the default **Site URL** if `redirectTo` is missing or the target domain is omitted from the Redirect URLs Whitelist.
+
+### Prevention Protocol
+1. **Whitelist All Sub-App Redirect URLs:**
+   In Supabase Dashboard → Auth → URL Configuration → Redirect URLs, register all sub-app domains and local ports:
+   ```text
+   https://family.minkoi.org/**
+   https://token-wallet-chi.vercel.app/**
+   http://localhost:5173/**
+   http://localhost:5174/**
+   http://localhost:5175/**
+   http://localhost:5176/**
+   http://localhost:5177/**
+   http://localhost:5178/**
+   http://localhost:5179/**
+   http://localhost:5180/**
+   ```
+2. **Explicit Frontend `redirectTo`:**
+   Always specify `redirectTo: \`${window.location.origin}/\`` during `signInWithOAuth` calls.
+
+---
+
+## 💻 5. Local Development with Remote Supabase Cloud DB
+
+### Configuration Pattern
+- Place `.env.local` files in local project roots (never check `.env.local` into Git).
+- Frontend variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+- Backend CORS setup for local Express/NestJS APIs:
+  ```typescript
+  import cors from 'cors';
+
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'https://family.minkoi.org',
+  ];
+
+  app.use(cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Blocked by CORS'));
+      }
+    },
+    credentials: true,
+  }));
+  ```
+
+---
+
+## 🎲 6. Mock Seed Data Generator Requirements
+
+Every management system or data-driven application MUST include an automated mock data generator script (`scripts/seed-mock-data.ts`).
+
+### Example (L&D Portal Domain):
+- **Employees:** Seed 30–50 employees with Names, Emails, Roles, Departments.
+- **Courses & Lectures:** Seed mandatory and elective course catalogues with materials.
+- **Learning Progress & Logs:** Seed progress percentages, quiz scores, certificates, and activity logs to feed monitoring dashboards with realistic telemetry.
+
+### Seed Script Pattern (`scripts/seed-mock-data.ts`):
+```typescript
+import { supabase } from '../src/utils/supabaseClient';
+
+async function seedMockData() {
+  console.log('🌱 Seeding mock data...');
+
+  const employees = Array.from({ length: 30 }, (_, i) => ({
+    id: `emp-${i + 1}`,
+    full_name: `Employee ${i + 1}`,
+    email: `emp${i + 1}@company.com`,
+    department: ['Engineering', 'Product', 'HR'][i % 3],
+  }));
+  await supabase.from('employees').upsert(employees);
+
+  console.log('✅ Seeding complete!');
+}
+
+seedMockData().catch(console.error);
+```
+
+### Package.json Commands:
+```json
+"scripts": {
+  "db:seed": "tsx scripts/seed-mock-data.ts"
+}
+```
+
+---
+
+## 🧹 7. Clean DB & Reset Scripts for Fresh Deployment
+
+Every application MUST provide an automated database wipe/clean script (`scripts/clean-db.ts`) to return the database to a Zero-Data state for fresh deployment or handoff.
+
+### Clean Script Pattern (`scripts/clean-db.ts`):
+```typescript
+import { supabase } from '../src/utils/supabaseClient';
+
+async function cleanDatabase() {
+  console.log('🧹 Cleaning Database for Fresh Deployment...');
+
+  // Delete records in reverse order of foreign key dependencies
+  await supabase.from('learning_progress').delete().neq('id', 'non_existent');
+  await supabase.from('courses').delete().neq('id', 'non_existent');
+  await supabase.from('employees').delete().neq('id', 'non_existent');
+
+  console.log('✨ Database reset complete. Ready for Fresh Deployment!');
+}
+
+cleanDatabase().catch(console.error);
+```
+
+### Package.json Script Suite:
+```json
+"scripts": {
+  "db:seed": "tsx scripts/seed-mock-data.ts",
+  "db:clean": "tsx scripts/clean-db.ts",
+  "db:reset": "npm run db:clean && npm run db:seed"
+}
+```
+
+---
+
+## 📋 8. Comprehensive AI Verification Checklist
+
+When auditing or reviewing code for any project in `D:\Hoa Hoang\Apps`, verify compliance against this checklist:
+
+- [ ] **Google OAuth:** Provider configured, `signInWithOAuth` uses `window.location.origin`, RLS active on user tables.
+- [ ] **Monorepo & Vercel:** Correct Root Directory set per Vercel Project, frontend env vars use `VITE_` / `NEXT_PUBLIC_`.
+- [ ] **Fixed Local Ports:** Port assigned from allocation table with `strictPort: true` in `vite.config.ts` or `-p <port>` in Next.js.
+- [ ] **Auth Isolation:** Sub-app origin registered in Supabase Auth Whitelist, `redirectTo` explicitly passed.
+- [ ] **Local Dev:** `.env.local` configured for remote Supabase DB, Express/NestJS CORS allows local frontend origins.
+- [ ] **Mock Data Generator:** `scripts/seed-mock-data.ts` present, seeds realistic domain records, runnable via `npm run db:seed`.
+- [ ] **Clean & Reset Scripts:** `scripts/clean-db.ts` present, deletes data in correct foreign-key reverse order, runnable via `npm run db:clean` / `npm run db:reset`.
+- [ ] **Code Quality:** TypeScript strict mode enabled, `type-only imports` used for types under `verbatimModuleSyntax`.
