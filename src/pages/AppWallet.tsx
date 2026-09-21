@@ -233,6 +233,24 @@ const INITIAL_APP_DATA: AppProject[] = [
     status: 'Development',
     priority: 'Medium',
     lastUpdated: Date.now()
+  },
+  {
+    id: 'app-vercel-menstrual-cycle',
+    name: 'Menstrual Cycle',
+    developer: 'Hoa Hoang',
+    github: 'https://github.com/johnnyhoang/menstrual-cycle',
+    frontendUrl: 'https://menstrual-cycle.vercel.app',
+    backendUrl: '',
+    hosting: 'Vercel',
+    database: 'LocalStorage / Supabase',
+    type: 'Web App',
+    description: 'Ứng dụng theo dõi chu kỳ kinh nguyệt và sức khỏe cá nhân trên Vercel.',
+    techStack: 'TypeScript, React, Vite',
+    techNotes: 'Vercel project: vercel.com/hoanghoa/menstrual-cycle',
+    backlog: [],
+    status: 'Production',
+    priority: 'Medium',
+    lastUpdated: Date.now()
   }
 ];
 

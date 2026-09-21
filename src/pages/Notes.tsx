@@ -369,6 +369,141 @@ const { data: { publicUrl } } = supabase.storage
       )
     },
     {
+      id: 'multi-app-auth',
+      icon: '🔄',
+      title: 'Dùng chung Auth & Chống Redirect Sai',
+      content: (
+        <div className="note-content">
+          <h2>Dùng chung Supabase Auth cho Nhiều App mà Không Bị Redirect Sai</h2>
+          <p className="note-desc">Khi nhiều Web App (TokenWallet, Family, BETH...) dùng chung 1 Supabase Project, người dùng đăng nhập tại App A có thể bị nhảy nhầm về Site URL mặc định nếu không cấu hình <code>redirectTo</code> và Whitelist chính xác.</p>
+
+          <h3>Nguyên Nhân Bị Fallback Nhầm App</h3>
+          <p>Mặc định trong Supabase Dashboard có một trường <strong>Site URL</strong> (ví dụ: <code>https://token-wallet-chi.vercel.app</code>). Nếu App B (<code>https://family.minkoi.org</code>) gọi <code>signInWithOAuth()</code> mà không khai báo <code>redirectTo</code> hoặc URL của App B chưa nằm trong Whitelist, Supabase sẽ <strong>tự động fallback quay về Site URL mặc định</strong> (App A).</p>
+
+          <h3>Giải Pháp 1 — Whitelist Đủ Redirect URLs trong Supabase</h3>
+          <Step n={1}>
+            <p>Vào <strong>Supabase Dashboard</strong> → Authentication → URL Configuration</p>
+          </Step>
+          <Step n={2}>
+            <p><strong>Site URL:</strong> Đặt domain chính hoặc app trung tâm (ví dụ: <code>https://token-wallet-chi.vercel.app</code>)</p>
+          </Step>
+          <Step n={3}>
+            <p><strong>Redirect URLs (Whitelist):</strong> Thêm <em>TẤT CẢ</em> domain production + localhost của các sub-app. Dùng wildcard <code>**</code> để hỗ trợ mọi sub-route:</p>
+            <CodeBlock lang="text" code={`https://family.minkoi.org/**
+https://beth-theta.vercel.app/**
+https://ade-flame.vercel.app/**
+http://localhost:5173/**
+http://localhost:3000/**`} />
+          </Step>
+
+          <h3>Giải Pháp 2 — Khai Báo Exact <code>redirectTo</code> Ở Frontend</h3>
+          <Alert type="info">Luôn truyền <code>window.location.origin</code> (hoặc đường dẫn callback cụ thể) khi gọi <code>signInWithOAuth</code>.</Alert>
+          <CodeBlock lang="typescript" code={`// Trong từng app cụ thể (Vite / React / Next.js)
+async function handleLogin() {
+  const currentOrigin = window.location.origin; // e.g., "https://family.minkoi.org" hoặc "http://localhost:5173"
+
+  await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      // Ép Supabase sau khi Google xác thực phải quay lại đúng domain hiện tại
+      redirectTo: \`\${currentOrigin}/\`,
+    },
+  });
+}`} />
+
+          <h3>Giải Pháp 3 — Phân Quyền Access Theo App (App Scope Isolation)</h3>
+          <p>Dùng chung 1 DB Auth nghĩa là User ID đăng nhập là duy nhất toàn hệ thống. Để kiểm soát User nào có quyền vào App nào:</p>
+          <CodeBlock lang="sql" code={`-- Bảng phân quyền app cho từng user
+CREATE TABLE public.user_app_access (
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  app_id text NOT NULL, -- 'app-family', 'app-tokenwallet', 'app-beth'
+  is_allowed boolean DEFAULT false,
+  PRIMARY KEY (user_id, app_id)
+);
+
+-- RLS Check xem user có quyền mở App hiện tại không
+CREATE POLICY "Check app access" ON app_data
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM user_app_access
+      WHERE user_id = auth.uid() AND app_id = 'app-family' AND is_allowed = true
+    )
+  );`} />
+        </div>
+      )
+    },
+    {
+      id: 'local-dev-supabase',
+      icon: '💻',
+      title: 'Chạy Local với Remote Supabase DB',
+      content: (
+        <div className="note-content">
+          <h2>Chạy Mọi App Ở Localhost Vẫn Kết Nối Supabase Cloud</h2>
+          <p className="note-desc">Hướng dẫn cấu hình để tất cả dự án (React/Vite/Next.js/Express) chạy mượt mà ở máy cá nhân (Localhost) nhưng kết nối trực tiếp DB & Auth trên Supabase Cloud mà không lo lỗi CORS hay OAuth fail.</p>
+
+          <h3>Cấu Trúc Env File Chuẩn Cho Localhost</h3>
+          <p>Mỗi dự án cần file <code>.env.local</code> (không commit vào Git) để ghi đè các biến môi trường kết nối Supabase Cloud:</p>
+
+          <CodeBlock lang="bash" code={`# .env.local trong dự án Vite / React
+VITE_SUPABASE_URL=https://xzmqeibqvgrthuisghvu.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1Ni...
+
+# .env.local trong dự án Node.js / Express Backend
+SUPABASE_URL=https://xzmqeibqvgrthuisghvu.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1Ni...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1Ni... # Dùng cho backend admin/cron job`} />
+
+          <h3>Bước 1 — Thêm Localhost Vào Whitelist Redirect URLs</h3>
+          <Alert type="warn">Nếu quên bước này, khi ấn "Login Google" ở <code>localhost:5173</code>, trình duyệt sẽ bị chuyển hướng sang domain production thay vì ở lại localhost!</Alert>
+          <p>Trong <strong>Supabase Dashboard → Auth → URL Configuration → Redirect URLs</strong>, thêm các URL local:</p>
+          <CodeBlock lang="text" code={`http://localhost:5173/**
+http://localhost:3000/**
+http://127.0.0.1:5173/**`} />
+
+          <h3>Bước 2 — Cấu Hình CORS Cho Local Node.js Backend</h3>
+          <p>Nếu dự án có backend Express / NestJS chạy local kết nối Supabase, cần cho phép Frontend Localhost gọi API mà không bị chặn CORS:</p>
+          <CodeBlock lang="typescript" code={`// Express Backend (apps/api/src/index.ts)
+import cors from 'cors';
+import express from 'express';
+
+const app = express();
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://family.minkoi.org',
+  'https://token-wallet-chi.vercel.app'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS blocked for origin: ' + origin));
+    }
+  },
+  credentials: true
+}));`} />
+
+          <h3>Bước 3 — Test Quy Trình Login ở Localhost</h3>
+          <Step n={1}>
+            <p>Khởi chạy app local: <code>npm run dev</code> (thường chạy tại <code>http://localhost:5173</code>)</p>
+          </Step>
+          <Step n={2}>
+            <p>Bấm nút <strong>Đăng nhập với Google</strong>. Trình duyệt mở trang chọn tài khoản Google.</p>
+          </Step>
+          <Step n={3}>
+            <p>Sau khi chọn tài khoản, Google chuyển về Supabase Auth → Supabase Auth đọc <code>redirectTo: http://localhost:5173/</code> → Trình duyệt nhảy về lại <code>localhost:5173</code> với đầy đủ Session token.</p>
+          </Step>
+
+          <Alert type="tip">
+            <strong>Kinh nghiệm:</strong> Bạn có thể dùng 1 Supabase Project cho cả Dev Local lẫn Production. Nhờ RLS và <code>auth.uid()</code>, dữ liệu giữa các môi trường vẫn được bảo vệ tuyệt đối an toàn.
+          </Alert>
+        </div>
+      )
+    },
+    {
       id: 'webapp-checklist',
       icon: '✅',
       title: 'Checklist Web App chuẩn',
