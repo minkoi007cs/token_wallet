@@ -278,14 +278,32 @@ export default function AppWallet() {
             }))
         }));
 
-        if (loadedApps.length > 0) {
-          const missingApps = INITIAL_APP_DATA.filter(initApp =>
-            !loadedApps.some((p: AppProject) => p.name === initApp.name)
-          );
-          setApps([...loadedApps, ...missingApps]);
-        } else {
-          setApps(INITIAL_APP_DATA);
+        // Merge strategy:
+        // - INITIAL_APP_DATA is source-of-truth for app config (name, URL, description…)
+        // - DB (loadedApps) is source-of-truth for backlog items
+        // - Deduplicate by id; any DB row whose id matches INITIAL gets its config overridden
+        const initialById = new Map(INITIAL_APP_DATA.map(a => [a.id, a]));
+
+        // Start with DB rows: patch metadata from INITIAL where id matches
+        const mergedById = new Map<string, AppProject>();
+        for (const dbApp of loadedApps) {
+          const initApp = initialById.get(dbApp.id);
+          if (initApp) {
+            // Keep backlog from DB, everything else from INITIAL
+            mergedById.set(dbApp.id, { ...initApp, backlog: dbApp.backlog });
+          } else {
+            mergedById.set(dbApp.id, dbApp);
+          }
         }
+
+        // Add any INITIAL apps not yet in DB
+        for (const initApp of INITIAL_APP_DATA) {
+          if (!mergedById.has(initApp.id)) {
+            mergedById.set(initApp.id, initApp);
+          }
+        }
+
+        setApps(Array.from(mergedById.values()));
       } else {
          setApps(INITIAL_APP_DATA);
       }
@@ -324,17 +342,45 @@ export default function AppWallet() {
   const [newBacklogAssignee, setNewBacklogAssignee] = useState('');
   const [newBacklogPriority, setNewBacklogPriority] = useState<'High' | 'Medium' | 'Low'>('Medium');
 
-  // URL accessibility checker
+  // URL accessibility checker — uses allorigins CORS proxy to read real HTTP status codes
+  // (covers Vercel 404 DEPLOYMENT_NOT_FOUND and any server-side error pages)
   const checkSingleAppHealth = async (app: AppProject): Promise<{ status: 'healthy' | 'failed' | 'no_url'; error?: string }> => {
     const url = app.frontendUrl || app.backendUrl;
     if (!url || !url.trim()) {
       return { status: 'no_url', error: 'Chưa có URL' };
     }
 
+    // --- Method 1: CORS proxy (allorigins.win) — reads real HTTP status code ---
+    // This detects 404 DEPLOYMENT_NOT_FOUND, 5xx errors, etc. that are invisible to direct fetch
+    try {
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      const proxyCtrl = new AbortController();
+      const proxyTid = setTimeout(() => proxyCtrl.abort(), 9000);
+      try {
+        const proxyRes = await fetch(proxyUrl, { signal: proxyCtrl.signal });
+        clearTimeout(proxyTid);
+        if (proxyRes.ok) {
+          const data = await proxyRes.json();
+          const httpCode = data?.status?.http_code;
+          if (httpCode && httpCode >= 400) {
+            // Treat 401/403 as "protected but reachable" (not a deployment failure)
+            if (httpCode === 401 || httpCode === 403) {
+              return { status: 'healthy' };
+            }
+            return { status: 'failed', error: `HTTP ${httpCode}` };
+          }
+          return { status: 'healthy' };
+        }
+      } catch {
+        clearTimeout(proxyTid);
+        // proxy failed — fall through to direct fetch
+      }
+    } catch { /* ignore proxy setup error */ }
+
+    // --- Method 2: Direct CORS fetch (works if target has CORS headers) ---
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 6000);
-
       try {
         const res = await fetch(url, {
           method: 'GET',
@@ -345,21 +391,18 @@ export default function AppWallet() {
           return { status: 'failed', error: `HTTP ${res.status}` };
         }
         return { status: 'healthy' };
-      } catch (err: any) {
+      } catch {
         clearTimeout(timeoutId);
-        // Fallback to mode: no-cors to test server DNS & reachable connectivity across origins
+        // --- Method 3: no-cors HEAD — network/DNS connectivity only ---
         const fallbackCtrl = new AbortController();
-        const fallbackTimeoutId = setTimeout(() => fallbackCtrl.abort(), 6000);
+        const fallbackTid = setTimeout(() => fallbackCtrl.abort(), 6000);
         try {
-          await fetch(url, {
-            method: 'HEAD',
-            mode: 'no-cors',
-            signal: fallbackCtrl.signal,
-          });
-          clearTimeout(fallbackTimeoutId);
+          await fetch(url, { method: 'HEAD', mode: 'no-cors', signal: fallbackCtrl.signal });
+          clearTimeout(fallbackTid);
+          // Server is reachable but status unknown (opaque response). Mark as healthy.
           return { status: 'healthy' };
         } catch {
-          clearTimeout(fallbackTimeoutId);
+          clearTimeout(fallbackTid);
           return { status: 'failed', error: 'Không thể truy cập' };
         }
       }
