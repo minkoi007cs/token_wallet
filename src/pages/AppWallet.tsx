@@ -619,6 +619,25 @@ export default function AppWallet() {
     return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
   };
 
+  const handleCardClick = (app: AppProject) => {
+    const targetUrl = app.frontendUrl || app.backendUrl || app.github;
+    if (targetUrl) {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      setActiveModal({ type: 'project-detail', app });
+    }
+  };
+
+  const getInitials = (name: string) => {
+    if (!name) return 'AP';
+    const clean = name.replace(/[^a-zA-Z0-9\s]/g, ' ').trim();
+    const parts = clean.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
   return (
     <div className="app-wallet-container" style={{ padding: '0', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
       {/* STICKY HEADER & FILTER TOOLBAR */}
@@ -805,82 +824,233 @@ export default function AppWallet() {
       </div>
       </div>
 
-      {/* APPS LIST GRID */}
-      <div className="tools-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
-        {filteredAndSortedApps.map(app => (
-          <div key={app.id} className={`tool-card ${app.isDisabled ? 'disabled' : ''}`} style={{ position: 'relative', opacity: app.isDisabled ? 0.6 : 1, transition: 'all 0.2s', cursor: 'pointer' }} onClick={() => setActiveModal({ type: 'project-detail', app })}>
-            <div className="tool-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ flex: 1 }}>
-                <h2
-                  onClick={() => app.frontendUrl ? window.open(app.frontendUrl, '_blank') : null}
-                  style={{ cursor: app.frontendUrl ? 'pointer' : 'default', textDecoration: app.frontendUrl ? 'underline' : 'none' }}
-                  title={app.frontendUrl ? `Open ${app.frontendUrl}` : ''}
-                >
-                  {app.name}
-                </h2>
-                <div style={{ marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <span className={`status-badge ${app.status?.toLowerCase()}`}>{app.status}</span>
-                  {app.priority && (
-                    <span className={`priority-badge ${app.priority.toLowerCase()}`}>
-                      {app.priority}
-                    </span>
-                  )}
-                  {app.isDisabled && <span className="status-badge" style={{ backgroundColor: 'var(--color-border)', color: 'var(--text-muted)' }}>DISABLED</span>}
+      {/* PORTFOLIO CATALOG GRID */}
+      <div className="portfolio-catalog-grid">
+        {filteredAndSortedApps.map(app => {
+          const statusClass = `status-${(app.status || 'development').toLowerCase()}`;
+          const techList = (app.techStack || '')
+            .split(/[,+]/)
+            .map(t => t.trim())
+            .filter(Boolean);
+
+          return (
+            <div
+              key={app.id}
+              className={`portfolio-card ${statusClass} ${app.isDisabled ? 'disabled' : ''}`}
+              onClick={() => handleCardClick(app)}
+              title={app.frontendUrl ? `Open app: ${app.frontendUrl}` : (app.backendUrl ? `Open API: ${app.backendUrl}` : `Open ${app.name}`)}
+            >
+              {/* Header: App Avatar, Title, Dev, Edit & Action buttons */}
+              <div className="portfolio-card-header">
+                <div className="portfolio-header-left">
+                  <div className="portfolio-app-avatar">
+                    {getInitials(app.name)}
+                  </div>
+                  <div className="portfolio-title-group">
+                    <h3 className="portfolio-app-name" title={app.name}>
+                      {app.name}
+                    </h3>
+                    <div className="portfolio-app-dev">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                      <span>{app.developer || 'Hoa Hoang'}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              
-              {/* Action Menu */}
-              <div style={{ position: 'relative' }} onMouseLeave={() => setOpenActionMenuId(null)}>
-                <button 
-                  className="btn btn-sm" 
-                  style={{ background: 'transparent', border: 'none', padding: '0.2rem 0.5rem', fontSize: '1.2rem', color: 'var(--text-muted)', cursor: 'pointer' }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOpenActionMenuId(openActionMenuId === app.id ? null : app.id);
-                  }}
-                >
-                  ⋮
-                </button>
-                {openActionMenuId === app.id && (
-                  <div className="action-dropdown" style={{
-                    position: 'absolute', top: '100%', right: '0', backgroundColor: 'var(--bg-elevated)', 
-                    border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', 
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)', minWidth: '160px', zIndex: 10, padding: '0.5rem 0'
-                  }}>
-                    <div className="dropdown-item" onClick={() => { handleOpenModal(app); setOpenActionMenuId(null); }}>
-                      Edit App
-                    </div>
-                    <div className="dropdown-item" onClick={() => { handleOpenModal(app); setOpenActionMenuId(null); }}>
-                      Add Backlog Story
-                    </div>
-                    {app.database?.toLowerCase().includes('supabase') && (
-                      <div className="dropdown-item" onClick={handleRestartData}>
-                        Restart Data (Supabase)
+
+                {/* Edit Icon Button & Action Menu */}
+                <div className="portfolio-header-actions">
+                  {/* EDIT ICON BUTTON (Opens Modal without opening app link) */}
+                  <button
+                    className="portfolio-action-btn portfolio-edit-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenModal(app);
+                    }}
+                    title="Edit App Details"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                  </button>
+
+                  {/* MORE OPTIONS (⋮) */}
+                  <div style={{ position: 'relative' }} onMouseLeave={() => setOpenActionMenuId(null)}>
+                    <button
+                      className="portfolio-action-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenActionMenuId(openActionMenuId === app.id ? null : app.id);
+                      }}
+                      title="More Options"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="1.2"></circle>
+                        <circle cx="12" cy="5" r="1.2"></circle>
+                        <circle cx="12" cy="19" r="1.2"></circle>
+                      </svg>
+                    </button>
+                    {openActionMenuId === app.id && (
+                      <div className="action-dropdown" style={{
+                        position: 'absolute', top: '100%', right: '0', backgroundColor: 'var(--bg-elevated)', 
+                        border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', 
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.4)', minWidth: '170px', zIndex: 50, padding: '0.5rem 0'
+                      }} onClick={(e) => e.stopPropagation()}>
+                        <div className="dropdown-item" onClick={() => { handleOpenModal(app); setOpenActionMenuId(null); }}>
+                          ✏️ Edit App
+                        </div>
+                        <div className="dropdown-item" onClick={() => { setActiveModal({ type: 'project-detail', app }); setOpenActionMenuId(null); }}>
+                          📋 View Details & Tasks
+                        </div>
+                        {app.database?.toLowerCase().includes('supabase') && (
+                          <div className="dropdown-item" onClick={handleRestartData}>
+                            ⚡ Supabase Dashboard
+                          </div>
+                        )}
+                        <div className="dropdown-item" style={{ borderTop: '1px solid var(--color-border)', marginTop: '0.25rem', paddingTop: '0.25rem', color: app.isDisabled ? '#10b981' : '#ef4444' }} onClick={() => handleToggleDisable(app.id)}>
+                          {app.isDisabled ? '✅ Enable App' : '🚫 Disable App'}
+                        </div>
                       </div>
                     )}
-                    <div className="dropdown-item" style={{ borderTop: '1px solid var(--color-border)', marginTop: '0.25rem', paddingTop: '0.25rem', color: app.isDisabled ? '#10b981' : '#ef4444' }} onClick={() => handleToggleDisable(app.id)}>
-                      {app.isDisabled ? 'Enable App' : 'Disable App'}
-                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Badges Row: Status, Priority, Type, Hosting */}
+              <div className="portfolio-badges-row">
+                <span className={`status-badge ${(app.status || 'development').toLowerCase()}`}>
+                  {app.status || 'Development'}
+                </span>
+                {app.priority && (
+                  <span className={`priority-badge ${app.priority.toLowerCase()}`}>
+                    {app.priority}
+                  </span>
+                )}
+                {app.type && (
+                  <span className="portfolio-badge-type">
+                    {app.type}
+                  </span>
+                )}
+                {app.hosting && (
+                  <span className="portfolio-badge-host">
+                    ☁️ {app.hosting}
+                  </span>
+                )}
+                {app.isDisabled && (
+                  <span className="status-badge" style={{ backgroundColor: 'var(--color-border)', color: 'var(--text-muted)' }}>
+                    DISABLED
+                  </span>
+                )}
+              </div>
+
+              {/* Body: Description & Tech Stack Chips */}
+              <div className="portfolio-body">
+                <p className="portfolio-desc">
+                  {app.description || 'No description provided for this application.'}
+                </p>
+
+                {techList.length > 0 && (
+                  <div className="portfolio-tech-list">
+                    {techList.slice(0, 4).map((tech, idx) => (
+                      <span key={idx} className="portfolio-tech-pill">
+                        {tech}
+                      </span>
+                    ))}
+                    {techList.length > 4 && (
+                      <span className="portfolio-tech-more">
+                        +{techList.length - 4} more
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
+
+              {/* Footer: URLs & Quick Actions */}
+              <div className="portfolio-footer">
+                <div className="portfolio-footer-top">
+                  <div className="portfolio-url-preview" title={app.frontendUrl || app.backendUrl || app.github || 'No URL configured'}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="2" y1="12" x2="22" y2="12"></line>
+                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                    <span>
+                      {app.frontendUrl
+                        ? app.frontendUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')
+                        : (app.backendUrl
+                            ? app.backendUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')
+                            : (app.github ? 'github.com' : 'Local / Internal'))}
+                    </span>
+                  </div>
+
+                  <div className="portfolio-quick-links">
+                    {app.github && (
+                      <a
+                        href={app.github}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="portfolio-link-chip"
+                        onClick={(e) => e.stopPropagation()}
+                        title="View GitHub Repository"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                        </svg>
+                        <span>Repo</span>
+                      </a>
+                    )}
+                    {app.backendUrl && app.frontendUrl && (
+                      <a
+                        href={app.backendUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="portfolio-link-chip"
+                        onClick={(e) => e.stopPropagation()}
+                        title="View Backend API"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                          <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                          <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                          <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                        </svg>
+                        <span>API</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                <div className="portfolio-footer-bottom">
+                  <div
+                    className="portfolio-backlog-badge"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveModal({ type: 'project-detail', app });
+                    }}
+                    title="Click to view & manage tasks"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 11l3 3L22 4"></path>
+                      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                    </svg>
+                    <span>Tasks: {app.backlog.filter(b => b.isCompleted).length}/{app.backlog.length}</span>
+                  </div>
+
+                  <div className="portfolio-launch-hint">
+                    <span>Open App</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="7" y1="17" x2="17" y2="7"></line>
+                      <polyline points="7 7 17 7 17 17"></polyline>
+                    </svg>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="accounts-list" style={{ marginTop: '1rem' }}>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <strong>Frontend:</strong> <a href={app.frontendUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--color-active)', fontWeight: 'bold' }} onClick={e => e.stopPropagation()}>{app.frontendUrl || 'N/A'}</a>
-              </div>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <strong>Backend:</strong> <a href={app.backendUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--color-active)', fontWeight: 'bold' }} onClick={e => e.stopPropagation()}>{app.backendUrl || 'N/A'}</a>
-              </div>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}><strong>Type:</strong> {app.type} | <strong>Host:</strong> {app.hosting}</p>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}><strong>Stack:</strong> {app.techStack}</p>
-              <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                <span>Backlog: {app.backlog.filter(b => b.isCompleted).length}/{app.backlog.length}</span>
-                <span>Updated: {formatDate(app.lastUpdated)}</span>
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* Empty States */}
         {apps.length === 0 && (

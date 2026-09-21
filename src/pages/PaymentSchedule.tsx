@@ -368,7 +368,6 @@ export default function PaymentSchedule() {
     }
 
     setModalItem(null);
-  };Item(null);
   };
 
   // Calculate Days Remaining & Urgency for Reminder
@@ -509,6 +508,7 @@ export default function PaymentSchedule() {
       dueSoonCount,
       dueTodayCount,
       overdueCount,
+      pendingRemovalCount,
       urgentCount: overdueCount + dueTodayCount,
       totalMonthlyVND: Math.round(totalMonthlyVND),
       totalMonthlyUSD: Math.round(totalMonthlyUSD * 10) / 10
