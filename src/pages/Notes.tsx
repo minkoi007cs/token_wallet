@@ -100,6 +100,11 @@ Hãy kiểm tra toàn bộ mã nguồn và cấu hình của dự án hiện t�
 - [ ] Sử dụng \`type-only imports\` khi bật \`verbatimModuleSyntax\`
 - [ ] Có Loading state và Error boundaries cho mọi async data fetch
 - [ ] Không commit file \`.env.local\` hoặc secret keys vào Git repository
+
+## 8. 🎲 Script Data Giả Lập (Mock Seed Data)
+- [ ] Tích hợp script seed database giả lập trong \`scripts/seed-mock-data.ts\` (hoặc SQL seed script)
+- [ ] Tạo dữ liệu mẫu thực tế & phong phú (User/Nhân viên, Bài giảng/Khóa học, Tiến độ & Analytics monitor đầy đủ)
+- [ ] Khai báo lệnh \`npm run db:seed\` trong \`package.json\` để tái tạo môi trường dữ liệu mẫu bất cứ lúc nào
 `;
     navigator.clipboard.writeText(markdown);
     setCopiedAll(true);
@@ -675,6 +680,78 @@ http://localhost:5179/**`} />
       )
     },
     {
+      id: 'mock-data-script',
+      icon: '🎲',
+      title: 'Script Seed & Giả Lập Data',
+      content: (
+        <div className="note-content">
+          <h2>Tạo Script Seed Data Giả Lập Cho Mỗi Ứng Dụng (Mock Data Generator)</h2>
+          <p className="note-desc">Mọi ứng dụng (đặc biệt là các hệ thống quản trị như LnD Portal, Family, TokenWallet...) <strong>bắt buộc phải có một bộ script seed data giả lập tự động</strong>. Script này sinh ra dữ liệu phong phú để phục vụ kiểm thử UI/UX, đo đạc thông số monitor và demo sản phẩm mà không phụ thuộc data thật.</p>
+
+          <h3>Ví Dụ Thực Tế Cho App L&amp;D Portal (<code>LnD_Portal</code>)</h3>
+          <div className="note-checklist">
+            <label className="checklist-item"><span>👥 <strong>Nhân viên (Employees):</strong> Tự sinh danh sách 50–100 nhân viên đầy đủ Tên, Email, Phòng ban (HR, Tech, Sales) và Chức danh.</span></label>
+            <label className="checklist-item"><span>📚 <strong>Bài giảng &amp; Khóa học (Lectures &amp; Courses):</strong> Tự sinh danh mục khóa học Bắt buộc, Kỹ năng mềm, Chuyên môn kèm tài liệu.</span></label>
+            <label className="checklist-item"><span>🎯 <strong>Chương trình đào tạo (Training Programs):</strong> Phân bổ nhân viên vào các lộ trình học tập theo quý/năm.</span></label>
+            <label className="checklist-item"><span>📊 <strong>Tiến độ &amp; Monitor (Learning Logs &amp; Progress):</strong> Tạo lịch sử học tập, thời lượng học, điểm thi, chứng chỉ để Dashboard Monitor vẽ biểu đồ chân thực.</span></label>
+          </div>
+
+          <h3>Code Mẫu TypeScript Seed Script (<code>scripts/seed-mock-data.ts</code>)</h3>
+          <CodeBlock lang="typescript" code={`// scripts/seed-mock-data.ts
+import { supabase } from '../src/utils/supabaseClient';
+
+async function seedMockData() {
+  console.log('🌱 Starting Mock Data Seeding...');
+
+  // 1. Seed Employees
+  const employees = Array.from({ length: 30 }, (_, i) => ({
+    id: \`emp-\${i + 1}\`,
+    full_name: \`Nguyễn Văn Employee \${i + 1}\`,
+    email: \`employee\${i + 1}@company.com\`,
+    department: ['Engineering', 'Product', 'HR', 'Finance'][i % 4],
+    role: i === 0 ? 'manager' : 'staff',
+  }));
+  await supabase.from('lnd_employees').upsert(employees);
+
+  // 2. Seed Courses & Lectures
+  const courses = [
+    { id: 'course-1', title: 'An Toàn Thông Tin & Security 2026', category: 'Bắt buộc' },
+    { id: 'course-2', title: 'Kỹ Năng Quản Lý Dự Án Agile/Scrum', category: 'Chuyên môn' },
+    { id: 'course-3', title: 'Giao Tiếp & Làm Việc Nhóm Hiệu Quả', category: 'Kỹ năng mềm' },
+  ];
+  await supabase.from('lnd_courses').upsert(courses);
+
+  // 3. Seed Learning Progress & Monitoring Logs
+  const progressLogs = employees.flatMap(emp =>
+    courses.map(c => ({
+      employee_id: emp.id,
+      course_id: c.id,
+      progress_percent: Math.floor(Math.random() * 100),
+      is_completed: Math.random() > 0.4,
+      score: Math.floor(Math.random() * 40) + 60,
+      last_active_at: new Date(Date.now() - Math.floor(Math.random() * 7 * 86400000)).toISOString(),
+    }))
+  );
+  await supabase.from('lnd_learning_progress').upsert(progressLogs);
+
+  console.log('✅ Mock Data Seeding Complete!');
+}
+
+seedMockData().catch(console.error);`} />
+
+          <h3>Cấu Hình Command Trong <code>package.json</code></h3>
+          <CodeBlock lang="json" code={`// package.json
+"scripts": {
+  "db:seed": "tsx scripts/seed-mock-data.ts"
+}`} />
+
+          <Alert type="tip">
+            Chạy lệnh <code>npm run db:seed</code> bất cứ khi nào bạn cần khôi phục lại dữ liệu mẫu hoặc kiểm thử giao diện khi có thành viên mới gia nhập team dev.
+          </Alert>
+        </div>
+      )
+    },
+    {
       id: 'webapp-checklist',
       icon: '✅',
       title: 'Checklist Web App chuẩn',
@@ -715,6 +792,15 @@ http://localhost:5179/**`} />
               'Index trên cột filter thường dùng (user_id, created_at)',
               'Backup policy (Point-in-Time Recovery cho Pro plan)',
               'Supabase Auth Redirect URLs whitelist đủ domain',
+            ].map(item => <label key={item} className="checklist-item"><input type="checkbox" /><span>{item}</span></label>)}
+          </div>
+
+          <h3>🎲 Seed Data Giả Lập</h3>
+          <div className="note-checklist">
+            {[
+              'Có script seed mock data trong scripts/seed-mock-data.ts',
+              'Tự sinh đầy đủ Nhân viên, Khóa học, Tiến độ & Nhật ký monitor',
+              'Khai báo npm run db:seed trong package.json',
             ].map(item => <label key={item} className="checklist-item"><input type="checkbox" /><span>{item}</span></label>)}
           </div>
 
