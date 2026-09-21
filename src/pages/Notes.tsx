@@ -105,6 +105,11 @@ Hãy kiểm tra toàn bộ mã nguồn và cấu hình của dự án hiện t�
 - [ ] Tích hợp script seed database giả lập trong \`scripts/seed-mock-data.ts\` (hoặc SQL seed script)
 - [ ] Tạo dữ liệu mẫu thực tế & phong phú (User/Nhân viên, Bài giảng/Khóa học, Tiến độ & Analytics monitor đầy đủ)
 - [ ] Khai báo lệnh \`npm run db:seed\` trong \`package.json\` để tái tạo môi trường dữ liệu mẫu bất cứ lúc nào
+
+## 9. 🧹 Script Dọn Dẹp & Reset Database (Fresh Deployment)
+- [ ] Tích hợp script xóa sạch dữ liệu DB trong \`scripts/clean-db.ts\` (hoặc SQL TRUNCATE script)
+- [ ] Xóa đúng thứ tự ràng buộc khóa ngoại (Foreign Keys) để không bị vi phạm CASCADE constraints
+- [ ] Khai báo các lệnh \`npm run db:clean\` và \`npm run db:reset\` trong \`package.json\` để sẵn sàng cho Fresh Deployment
 `;
     navigator.clipboard.writeText(markdown);
     setCopiedAll(true);
@@ -739,14 +744,37 @@ async function seedMockData() {
 
 seedMockData().catch(console.error);`} />
 
-          <h3>Cấu Hình Command Trong <code>package.json</code></h3>
+          <h3>Script Dọn Dẹp / Reset Database (Sẵn Sàng Cho Fresh Deployment)</h3>
+          <p>Bên cạnh seed data, ứng dụng <strong>bắt buộc phải có một script dọn dẹp sạch toàn bộ dữ liệu</strong> (<code>scripts/clean-db.ts</code>). Script này xóa dữ liệu thử nghiệm theo đúng thứ tự khóa ngoại (foreign keys) để trả DB về trạng thái trắng (Zero Data), sẵn sàng cho việc <strong>Fresh Deployment / Handoff bàn giao sản phẩm</strong>.</p>
+
+          <CodeBlock lang="typescript" code={`// scripts/clean-db.ts
+import { supabase } from '../src/utils/supabaseClient';
+
+async function cleanDatabase() {
+  console.log('🧹 Cleaning Database for Fresh Deployment...');
+
+  // Xóa theo thứ tự ngược lại của ràng buộc khóa ngoại (Foreign Keys)
+  await supabase.from('lnd_learning_progress').delete().neq('id', 'non_existent');
+  await supabase.from('lnd_courses').delete().neq('id', 'non_existent');
+  await supabase.from('lnd_employees').delete().neq('id', 'non_existent');
+
+  console.log('✨ Database Reset Successfully! Ready for Fresh Deployment.');
+}
+
+cleanDatabase().catch(console.error);`} />
+
+          <h3>Cấu Hình Commands Trong <code>package.json</code></h3>
           <CodeBlock lang="json" code={`// package.json
 "scripts": {
-  "db:seed": "tsx scripts/seed-mock-data.ts"
+  "db:seed": "tsx scripts/seed-mock-data.ts",
+  "db:clean": "tsx scripts/clean-db.ts",
+  "db:reset": "npm run db:clean && npm run db:seed"
 }`} />
 
           <Alert type="tip">
-            Chạy lệnh <code>npm run db:seed</code> bất cứ khi nào bạn cần khôi phục lại dữ liệu mẫu hoặc kiểm thử giao diện khi có thành viên mới gia nhập team dev.
+            • <code>npm run db:seed</code> — Tạo lại toàn bộ dữ liệu mẫu giả lập.<br />
+            • <code>npm run db:clean</code> — Xóa sạch toàn bộ dữ liệu, đưa DB về 0 để sẵn sàng cho Fresh Deployment.<br />
+            • <code>npm run db:reset</code> — Dọn dẹp sạch rồi seed lại data giả lập mới.
           </Alert>
         </div>
       )
@@ -795,12 +823,13 @@ seedMockData().catch(console.error);`} />
             ].map(item => <label key={item} className="checklist-item"><input type="checkbox" /><span>{item}</span></label>)}
           </div>
 
-          <h3>🎲 Seed Data Giả Lập</h3>
+          <h3>🎲 Seed &amp; Clean Data (Fresh Deployment)</h3>
           <div className="note-checklist">
             {[
               'Có script seed mock data trong scripts/seed-mock-data.ts',
+              'Có script clean db trong scripts/clean-db.ts (Xóa đúng thứ tự Foreign Key)',
               'Tự sinh đầy đủ Nhân viên, Khóa học, Tiến độ & Nhật ký monitor',
-              'Khai báo npm run db:seed trong package.json',
+              'Khai báo đầy đủ db:seed, db:clean, db:reset trong package.json',
             ].map(item => <label key={item} className="checklist-item"><input type="checkbox" /><span>{item}</span></label>)}
           </div>
 
