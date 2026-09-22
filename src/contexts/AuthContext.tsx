@@ -41,17 +41,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
+const ADMIN_EMAILS = ['hoang.hoa@gmail.com'];
+
   async function loadPermissions(userId: string, email: string) {
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    const isSuperAdminEmail = ADMIN_EMAILS.includes(normalizedEmail);
+
     const defaultRow = {
       user_id: userId,
       email,
+      role: isSuperAdminEmail ? 'admin' : 'user',
+      can_read_token_wallet: isSuperAdminEmail,
+      can_edit_token_wallet: isSuperAdminEmail,
+      can_read_payments: isSuperAdminEmail,
+      can_edit_payments: isSuperAdminEmail,
+      can_read_app_wallet: true,
+      can_edit_app_wallet: isSuperAdminEmail,
     };
 
-    // Try to register user identity safely; DB defaults set unprivileged role/flags
+    // Try to register user identity safely
     try {
       await supabase
         .from('tkw_user_permissions')
-        .upsert(defaultRow, { onConflict: 'user_id', ignoreDuplicates: true });
+        .upsert(defaultRow, { onConflict: 'user_id', ignoreDuplicates: !isSuperAdminEmail });
     } catch (err) {
       console.warn('permission row upsert failed', err);
     }
@@ -63,15 +75,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('user_id', userId)
       .single();
 
-    if (data) {
+    const isUserAdmin = isSuperAdminEmail || data?.role === 'admin';
+
+    if (isUserAdmin) {
+      setPermissions({
+        role: 'admin',
+        can_read_token_wallet: true,
+        can_edit_token_wallet: true,
+        can_read_payments: true,
+        can_edit_payments: true,
+        can_read_app_wallet: true,
+        can_edit_app_wallet: true,
+      });
+
+      // Sync back full permissions to database if not already marked as admin
+      if (data?.role !== 'admin' || !data?.can_edit_app_wallet || !data?.can_read_token_wallet) {
+        await supabase
+          .from('tkw_user_permissions')
+          .update({
+            role: 'admin',
+            can_read_token_wallet: true,
+            can_edit_token_wallet: true,
+            can_read_payments: true,
+            can_edit_payments: true,
+            can_read_app_wallet: true,
+            can_edit_app_wallet: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId);
+      }
+    } else if (data) {
       setPermissions({
         role: data.role,
-        can_read_token_wallet: data.can_read_token_wallet,
-        can_edit_token_wallet: data.can_edit_token_wallet,
-        can_read_payments: data.can_read_payments,
-        can_edit_payments: data.can_edit_payments,
-        can_read_app_wallet: data.can_read_app_wallet,
-        can_edit_app_wallet: data.can_edit_app_wallet,
+        can_read_token_wallet: Boolean(data.can_read_token_wallet),
+        can_edit_token_wallet: Boolean(data.can_edit_token_wallet),
+        can_read_payments: Boolean(data.can_read_payments),
+        can_edit_payments: Boolean(data.can_edit_payments),
+        can_read_app_wallet: Boolean(data.can_read_app_wallet),
+        can_edit_app_wallet: Boolean(data.can_edit_app_wallet),
       });
     } else {
       setPermissions(DEFAULT_USER_PERMISSIONS);

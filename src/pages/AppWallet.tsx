@@ -16,8 +16,44 @@ import { interpretHealth } from '../utils/health';
 import { Modal } from '../components/Modal';
 import { removedIds } from '../data/syncPolicy';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  SearchIcon,
+  RefreshIcon,
+  PlusIcon,
+  EditIcon,
+  ExternalLinkIcon,
+  AppStoreIcon,
+} from '../components/icons';
 
 export type { AppProject, BacklogItem };
+
+const GRADIENTS = [
+  'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', // Indigo -> Purple
+  'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)', // Emerald -> Cyan
+  'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)', // Amber -> Red
+  'linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)', // Cyan -> Blue
+  'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)', // Pink -> Violet
+  'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', // Blue -> Dark Blue
+  'linear-gradient(135deg, #f97316 0%, #eab308 100%)', // Orange -> Yellow
+];
+
+function getAppGradient(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % GRADIENTS.length;
+  return GRADIENTS[index];
+}
+
+function getAppInitials(title: string): string {
+  if (!title) return 'APP';
+  const parts = title.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return title.slice(0, 2).toUpperCase();
+}
 
 export default function AppWallet() {
   const { permissions } = useAuth();
@@ -47,8 +83,9 @@ export default function AppWallet() {
   });
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [activeModal, setActiveModal] = useState<{
-    type: 'edit-app' | 'project-detail';
+    type: 'edit-app';
     project?: AppProject;
   } | null>(null);
 
@@ -66,6 +103,20 @@ export default function AppWallet() {
       backlog: backlogItems.filter((b) => b.projectId === p.id),
     }));
   }, [projectItems, backlogItems, healthMap]);
+
+  // Dynamic Categories list extracted from projects
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    apps.forEach((a) => {
+      if (a.category) set.add(a.category);
+    });
+    return Array.from(set);
+  }, [apps]);
+
+  // Statistics
+  const healthyCount = useMemo(() => {
+    return apps.filter((a) => a.healthStatus === 'healthy').length;
+  }, [apps]);
 
   // Manual Concurrency-Capped Health Checker (Max 5 concurrent)
   const handleCheckHealthAll = async () => {
@@ -176,7 +227,7 @@ export default function AppWallet() {
   };
 
   const handleDeleteApp = async (projectId: string) => {
-    if (window.confirm('Xóa dự án này?')) {
+    if (window.confirm('Bạn có chắc muốn xóa ứng dụng này?')) {
       try {
         await supabase.from('tkw_app_backlog_items').delete().eq('project_id', projectId);
         await supabase.from('tkw_app_projects').delete().eq('id', projectId);
@@ -201,70 +252,216 @@ export default function AppWallet() {
   };
 
   const filteredApps = useMemo(() => {
+    let result = apps;
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return apps;
-    return apps.filter(
-      (a) => a.title.toLowerCase().includes(q) || (a.description || '').toLowerCase().includes(q)
-    );
-  }, [apps, searchQuery]);
+
+    if (selectedCategory !== 'all') {
+      result = result.filter((a) => a.category === selectedCategory);
+    }
+
+    if (q) {
+      result = result.filter(
+        (a) =>
+          a.title.toLowerCase().includes(q) ||
+          (a.description || '').toLowerCase().includes(q) ||
+          (a.category || '').toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [apps, searchQuery, selectedCategory]);
 
   return (
-    <div className="app-wallet-page" style={{ maxWidth: '1400px', margin: '0 auto' }}>
-      <div className="toolbar-container" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <input
-            type="text"
-            className="input-field"
-            style={{ maxWidth: '350px' }}
-            placeholder="Tìm ứng dụng..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <button className="btn btn-secondary" onClick={handleCheckHealthAll} disabled={isCheckingHealth}>
-            {isCheckingHealth ? 'Đang kiểm tra...' : 'Check Health Tất Cả'}
-          </button>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            * Kiểm tra gửi URL tới dịch vụ bên thứ ba (allorigins.win)
-          </span>
+    <div className="app-wallet-container">
+      {/* App Store Header & Controls Card */}
+      <div className="store-header-card">
+        <div className="store-header-top">
+          <div className="store-title-block">
+            <h2>
+              <AppStoreIcon size={26} />
+              App Store Workspace
+            </h2>
+            <p>Bộ sưu tập các ứng dụng & sản phẩm hệ thống</p>
+          </div>
+
+          <div className="store-stats-pills">
+            <div className="store-stat-pill">
+              Tổng số app: <strong>{apps.length}</strong>
+            </div>
+            {healthyCount > 0 && (
+              <div className="store-stat-pill active-healthy">
+                Online: <strong>{healthyCount}</strong>
+              </div>
+            )}
+          </div>
         </div>
 
-        {canEdit && (
-          <button className="btn btn-primary" onClick={() => handleOpenEditModal()}>
-            + Thêm Dự Án
+        <div className="store-control-bar">
+          <div className="store-search-box">
+            <div className="store-search-icon">
+              <SearchIcon size={16} />
+            </div>
+            <input
+              type="text"
+              className="store-search-input"
+              placeholder="Tìm kiếm ứng dụng, danh mục..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="store-actions">
+            <button
+              className="btn btn-secondary"
+              onClick={handleCheckHealthAll}
+              disabled={isCheckingHealth}
+            >
+              <RefreshIcon size={15} className={isCheckingHealth ? 'spin-icon' : ''} />
+              {isCheckingHealth ? 'Đang check health...' : 'Check Health Tất Cả'}
+            </button>
+
+            {canEdit && (
+              <button className="btn btn-primary" onClick={() => handleOpenEditModal()}>
+                <PlusIcon size={16} />
+                Thêm Dự Án
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Category Filter Pills */}
+        <div className="store-categories-bar">
+          <button
+            className={`store-cat-tab ${selectedCategory === 'all' ? 'active' : ''}`}
+            onClick={() => setSelectedCategory('all')}
+          >
+            Tất cả
+            <span className="store-cat-count">{apps.length}</span>
           </button>
-        )}
+
+          {categories.map((cat) => {
+            const count = apps.filter((a) => a.category === cat).length;
+            return (
+              <button
+                key={cat}
+                className={`store-cat-tab ${selectedCategory === cat ? 'active' : ''}`}
+                onClick={() => setSelectedCategory(cat)}
+              >
+                {cat}
+                <span className="store-cat-count">{count}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="apps-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-        {filteredApps.map((app) => (
-          <div key={app.id} className={`app-card ${app.isDisabled ? 'disabled' : ''}`} style={{ border: '1px solid var(--color-border)', borderRadius: '8px', padding: '1.25rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <h3>{app.title}</h3>
-              <span className={`badge ${app.healthStatus === 'healthy' ? 'badge-success' : app.healthStatus === 'failed' ? 'badge-danger' : 'badge-secondary'}`}>
-                {app.healthStatus === 'healthy' ? 'Healthy' : app.healthStatus === 'failed' ? 'Down' : 'Unknown'}
-              </span>
+      {/* 5 PER ROW APP STORE GRID */}
+      <div className="store-grid">
+        {filteredApps.map((app, index) => {
+          const initials = getAppInitials(app.title);
+          const bgGradient = getAppGradient(app.title + app.id);
+          const backlogCount = app.backlog?.length || 0;
+
+          return (
+            <div
+              key={app.id}
+              className={`store-card ${app.isDisabled ? 'disabled' : ''}`}
+              style={{ animationDelay: `${index * 0.04}s` }}
+            >
+              <div>
+                {/* Squircle Icon & Title Block */}
+                <div className="store-card-header">
+                  <div className="store-app-icon" style={{ background: bgGradient }}>
+                    {initials}
+                  </div>
+                  <div className="store-app-meta">
+                    <div className="store-app-title" title={app.title}>
+                      {app.title}
+                    </div>
+                    <div className="store-app-category">{app.category || 'Web App'}</div>
+                  </div>
+                </div>
+
+                {/* Status Bar: Health dot + Status badge */}
+                <div className="store-card-status-bar">
+                  <div className="store-health-tag">
+                    <span
+                      className={`store-health-dot ${app.healthStatus || 'unknown'}`}
+                      title={`Health status: ${app.healthStatus}`}
+                    />
+                    <span>
+                      {app.healthStatus === 'healthy'
+                        ? 'Healthy'
+                        : app.healthStatus === 'failed'
+                        ? 'Down'
+                        : app.healthStatus === 'checking'
+                        ? 'Checking...'
+                        : 'Chưa check'}
+                    </span>
+                  </div>
+
+                  <span className="store-status-badge">{app.status}</span>
+                </div>
+
+                {/* Description */}
+                <p className="store-app-desc" title={app.description}>
+                  {app.description || 'Không có mô tả cho ứng dụng này.'}
+                </p>
+              </div>
+
+              {/* Card Footer: OPEN Button & Edit controls */}
+              <div className="store-card-footer">
+                {app.frontendUrl ? (
+                  <a
+                    href={app.frontendUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="store-btn-open"
+                    title={`Mở ${app.title}`}
+                  >
+                    MỞ
+                    <ExternalLinkIcon size={12} />
+                  </a>
+                ) : (
+                  <button
+                    className="store-btn-open disabled"
+                    onClick={() => canEdit && handleOpenEditModal(app)}
+                  >
+                    Chưa có URL
+                  </button>
+                )}
+
+                <div className="store-card-actions">
+                  {backlogCount > 0 && (
+                    <span className="store-backlog-chip" title={`${backlogCount} công việc backlog`}>
+                      {backlogCount} task
+                    </span>
+                  )}
+
+                  {canEdit && (
+                    <button
+                      className="store-icon-btn"
+                      onClick={() => handleOpenEditModal(app)}
+                      title="Chỉnh sửa / Quản lý"
+                    >
+                      <EditIcon size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
+          );
+        })}
 
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0.5rem 0 1rem' }}>
-              {app.description || 'Không có mô tả'}
-            </p>
-
-            {app.frontendUrl && (
-              <a href={app.frontendUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: 'var(--color-accent)' }}>
-                {app.frontendUrl}
-              </a>
-            )}
-
-            <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="badge">{app.status}</span>
-              {canEdit && (
-                <button className="btn btn-small" onClick={() => handleOpenEditModal(app)}>
-                  Quản lý / Sửa
-                </button>
-              )}
+        {/* Empty placeholder card to add project if editor */}
+        {canEdit && (
+          <div className="store-card store-card-add" onClick={() => handleOpenEditModal()}>
+            <div className="store-card-add-icon">
+              <PlusIcon size={20} />
             </div>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Thêm Ứng Dụng Mới</span>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Edit App Modal */}
@@ -278,39 +475,69 @@ export default function AppWallet() {
             <label>Tên dự án:</label>
             <input
               type="text"
-              className="input-field"
+              className="input-text"
               value={modalForm.title || ''}
               onChange={(e) => setModalForm({ ...modalForm, title: e.target.value })}
+              placeholder="VD: Token Wallet, Payment App..."
             />
+          </div>
+
+          <div className="form-row" style={{ marginTop: '1rem' }}>
+            <div className="form-group">
+              <label>Danh mục (Category):</label>
+              <input
+                type="text"
+                className="input-text"
+                value={modalForm.category || ''}
+                onChange={(e) => setModalForm({ ...modalForm, category: e.target.value })}
+                placeholder="VD: Web App, AI Tool..."
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Trạng thái (Status):</label>
+              <select
+                className="input-select"
+                value={modalForm.status || 'Development'}
+                onChange={(e) => setModalForm({ ...modalForm, status: e.target.value })}
+              >
+                <option value="Production">Production</option>
+                <option value="Development">Development</option>
+                <option value="Staging">Staging</option>
+                <option value="Planning">Planning</option>
+              </select>
+            </div>
           </div>
 
           <div className="form-group" style={{ marginTop: '1rem' }}>
             <label>URL Frontend:</label>
             <input
               type="url"
-              className="input-field"
+              className="input-text"
               value={modalForm.frontendUrl || ''}
               onChange={(e) => setModalForm({ ...modalForm, frontendUrl: e.target.value })}
+              placeholder="https://example.com"
             />
           </div>
 
           <div className="form-group" style={{ marginTop: '1rem' }}>
             <label>Mô tả:</label>
             <textarea
-              className="input-field"
+              className="input-text"
               rows={3}
               value={modalForm.description || ''}
               onChange={(e) => setModalForm({ ...modalForm, description: e.target.value })}
+              placeholder="Mô tả tóm tắt ứng dụng..."
             />
           </div>
 
           <div className="form-group" style={{ marginTop: '1rem' }}>
-            <label>Backlog Tasks:</label>
+            <label>Backlog Tasks ({modalBacklog.length}):</label>
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <input
                 type="text"
-                className="input-field"
-                placeholder="Thêm task backlog..."
+                className="input-text"
+                placeholder="Thêm task backlog mới..."
                 value={newBacklogTitle}
                 onChange={(e) => setNewBacklogTitle(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddBacklogItem()}
@@ -320,13 +547,26 @@ export default function AppWallet() {
               </button>
             </div>
 
-            <ul style={{ listStyle: 'none', padding: 0 }}>
+            <ul style={{ listStyle: 'none', padding: 0, maxHeight: '160px', overflowY: 'auto' }}>
               {modalBacklog.map((item) => (
-                <li key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.25rem 0' }}>
+                <li
+                  key={item.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '0.4rem 0.6rem',
+                    background: 'rgba(255,255,255,0.03)',
+                    borderRadius: '6px',
+                    marginBottom: '0.35rem',
+                    fontSize: '0.85rem',
+                  }}
+                >
                   <span>{item.title}</span>
                   <button
-                    className="btn btn-small btn-danger"
+                    className="btn btn-icon-sm danger"
                     onClick={() => setModalBacklog((prev) => prev.filter((b) => b.id !== item.id))}
+                    title="Xóa task"
                   >
                     ✕
                   </button>
@@ -335,15 +575,27 @@ export default function AppWallet() {
             </ul>
           </div>
 
-          <div className="modal-actions" style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
-            {activeModal.project && (
-              <button className="btn btn-danger" onClick={() => handleDeleteApp(activeModal.project!.id)}>
+          <div
+            className="modal-actions"
+            style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between' }}
+          >
+            {activeModal.project ? (
+              <button
+                className="btn btn-danger"
+                onClick={() => handleDeleteApp(activeModal.project!.id)}
+              >
                 Xóa dự án
               </button>
+            ) : (
+              <div />
             )}
-            <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
-              <button className="btn btn-secondary" onClick={() => setActiveModal(null)}>Hủy</button>
-              <button className="btn btn-primary" onClick={handleSaveApp}>Lưu</button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="btn btn-secondary" onClick={() => setActiveModal(null)}>
+                Hủy
+              </button>
+              <button className="btn btn-primary" onClick={handleSaveApp}>
+                Lưu
+              </button>
             </div>
           </div>
         </Modal>
