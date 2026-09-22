@@ -42,16 +42,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   async function loadPermissions(userId: string, email: string) {
+    const isOwnerAdmin = email.toLowerCase() === 'hoang.hoa@gmail.com';
     const defaultRow = {
       user_id: userId,
       email,
+      role: isOwnerAdmin ? 'admin' : 'user',
+      can_read_token_wallet: isOwnerAdmin,
+      can_edit_token_wallet: isOwnerAdmin,
+      can_read_payments: isOwnerAdmin,
+      can_edit_payments: isOwnerAdmin,
+      can_read_app_wallet: true,
+      can_edit_app_wallet: isOwnerAdmin,
     };
 
-    // Try to register user identity safely; DB defaults set unprivileged role/flags
+    // Try to register user identity safely
     try {
       await supabase
         .from('tkw_user_permissions')
-        .upsert(defaultRow, { onConflict: 'user_id', ignoreDuplicates: true });
+        .upsert(defaultRow, { onConflict: 'user_id' });
     } catch (err) {
       console.warn('permission row upsert failed', err);
     }
@@ -63,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('user_id', userId)
       .single();
 
-    if (data?.role === 'admin') {
+    if (isOwnerAdmin || data?.role === 'admin') {
       setPermissions({
         role: 'admin',
         can_read_token_wallet: true,
