@@ -273,6 +273,7 @@ When refactoring UI for production applications using the `frontend-design` skil
   3. Summarize issues briefly and propose 2 distinct design directions aligned with product purpose. Pick the most rationale-driven approach before modifying code.
 - **Execution Rules:**
   - Preserve brand identity, core content, and valid design tokens.
+  - **Mandatory Logo & Favicon:** Every Web or App MUST have a unique, custom-designed Logo and Favicon (default Vite/React/Next.js/HTML favicons strictly forbidden).
   - Establish strong visual hierarchy with purposeful typography, spacing, and layout choices.
   - Avoid AI aesthetic tropes (excessive gradients, glassmorphism, "AI purple", default Inter/Arial fonts, unnecessary card grids, decorative icons/animations).
   - Design rhythm, clear empty/loading/error states, responsive grid breakpoints, and full accessibility (contrast, hover/focus states).
@@ -291,5 +292,7 @@ When auditing or reviewing code for any project in `D:\Hoa Hoang\Apps`, verify c
 - [ ] **Mock Data Generator:** `scripts/seed-mock-data.ts` present, seeds realistic domain records, runnable via `npm run db:seed`.
 - [ ] **Clean & Reset Scripts:** `scripts/clean-db.ts` present, deletes data in correct foreign-key reverse order, runnable via `npm run db:clean` / `npm run db:reset`.
 - [ ] **Code Quality:** TypeScript strict mode enabled, `type-only imports` used for types under `verbatimModuleSyntax`.
+- [ ] **Logo & Favicon:** Every Web/App MUST have a unique, custom-designed Logo and Favicon (default framework favicons forbidden).
 - [ ] **Frontend Design (Skill frontend-design):** Business logic & API contract preserved 100%, AI-generated UI tropes eliminated, strong typography & visual hierarchy established, responsive & accessible states verified.
+
 

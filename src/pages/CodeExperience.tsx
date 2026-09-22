@@ -116,6 +116,7 @@ Hãy kiểm tra toàn bộ mã nguồn và cấu hình của dự án hiện t�
 
 ## 10. 🎨 Quy Chuẩn Refactor UI Frontend (Skill frontend-design)
 - [ ] Giữ nguyên 100% Business Logic, API Contract, Route, State Management và hành vi đang hoạt động (không tạo màn hình demo)
+- [ ] Mọi Web hay App luôn phải có một Logo và Favicon được thiết kế & cấu hình đặc sắc riêng biệt (tuyệt đối không dùng favicon mặc định của Vite/React/Next.js)
 - [ ] Loại bỏ các dấu vết "AI-generated UI" (card bo góc lặp lại vô cơ, gradient màu lố, glassmorphism vô cớ, layout dashboard nhàm chán, icon/badge dư thừa)
 - [ ] Đọc & phân tích cấu trúc frontend, typography, design tokens trước khi sửa code
 - [ ] Đề xuất 2 phương án visual direction phù hợp và chốt 1 phương án có Visual Hierarchy mạnh mẽ
@@ -979,9 +980,10 @@ Báo cáo danh sách các mục ĐẠT / CHƯA ĐẠT và tự động nâng c�
             ].map(item => <label key={item} className="checklist-item"><input type="checkbox" /><span>{item}</span></label>)}
           </div>
 
-          <h3>⚙️ Code Quality</h3>
+          <h3>⚙️ Code Quality & Branding</h3>
           <div className="note-checklist">
             {[
+              'Mọi Web/App bắt buộc phải có Logo & Favicon thiết kế đặc sắc riêng biệt (không dùng favicon mặc định)',
               'TypeScript strict mode (noImplicitAny, strictNullChecks)',
               'ESLint + Prettier config',
               'type-only imports khi dùng verbatimModuleSyntax',
@@ -1046,7 +1048,8 @@ Tiến hành sửa code và báo cáo lại kết quả ngắn gọn.`,
 
           <h3>2. Nguyên Tắc Triển Khai Code Refactor UI</h3>
           <div className="note-checklist">
-            <label className="checklist-item"><span>🎯 <strong>Bảo Tồn Brand & Chức Năng:</strong> Giữ lại nhận diện thương hiệu, nội dung, tính năng và design system hiện có nếu còn hợp lý.</span></label>
+            <label className="checklist-item"><span>🎯 <strong>Bảo Tồn Brand &amp; Chức Năng:</strong> Giữ lại nhận diện thương hiệu, nội dung, tính năng và design system hiện có nếu còn hợp lý.</span></label>
+            <label className="checklist-item"><span>🎨 <strong>Logo &amp; Favicon Đặc Sắc Bắt Buộc:</strong> Mọi Web/App luôn phải có Logo và Favicon được thiết kế &amp; cấu hình đặc sắc riêng biệt, tuyệt đối không dùng favicon mặc định của framework (Vite/React/Next.js/HTML).</span></label>
             <label className="checklist-item"><span>🎨 <strong>Visual Direction Rõ Ràng:</strong> Thiết kế có hierarchy mạnh mẽ. Mọi lựa chọn về typography, spacing, màu sắc và layout đều phải có lý do cụ thể.</span></label>
             <label className="checklist-item"><span>🚫 <strong>Nói KHÔNG Với Chi Tiết Dư Thừa:</strong> Cấm dùng gradient lố, glassmorphism, "AI purple", font Inter/Arial mặc định, card-grid lặp lại, icon trang trí, animation hoặc shadow nếu không phục vụ trải nghiệm người dùng thực tế.</span></label>
             <label className="checklist-item"><span>📐 <strong>Layout Có Nhịp Điệu & Mật Độ Phù Hợp:</strong> Ưu tiên mật độ thông tin cân đối, xử lý chỉn chu các trạng thái Rỗng (Empty), Đang tải (Loading) và Lỗi (Error).</span></label>
