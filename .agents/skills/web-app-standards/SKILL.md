@@ -64,6 +64,7 @@ When multiple web applications share a single Supabase PostgreSQL Database, **EV
 | **gameEngG10** | `g10_` | `g10_students`, `g10_quizzes` |
 | **coffee_shop_24hxh** | `coffee_` | `coffee_products`, `coffee_orders` |
 | **qlhs_dtnt** | `dtnt_` | `dtnt_students`, `dtnt_evaluations` |
+| **MOM Health** | `mh_` | `mh_menstrual_cycles`, `mh_daily_logs`, `mh_app_settings` |
 
 ---
 
@@ -116,6 +117,7 @@ To prevent port conflicts, broken OAuth callbacks, and CORS errors when running 
 | **coffee_shop_24hxh** | `coffee24h` / `coffee_shop_24hxh` | `http://localhost:5178` | `http://localhost:5005` | Vite + NestJS |
 | **qlhs_dtnt** | `dtnt` | `http://localhost:5179` | `http://localhost:5006` | `vite.config.js` (`strictPort: true`) |
 | **gous** | `gous` | `http://localhost:5180` | `http://localhost:5007` | Vite + Express |
+| **MOM Health** | `benh` | `http://localhost:5181` | N/A (Frontend Only) | `vite.config.ts` (`strictPort: true`) |
 
 ### Enforcement in Vite (`vite.config.ts`)
 ```typescript
@@ -260,7 +262,24 @@ cleanDatabase().catch(console.error);
 
 ---
 
-## 📋 8. Comprehensive AI Verification Checklist
+## 🎨 9. Frontend UI Refactor & Design Standards (`frontend-design`)
+
+When refactoring UI for production applications using the `frontend-design` skill:
+
+- **Zero Behavior Change:** NEVER alter business logic, API contracts, routes, state management, or existing operational behavior. No fake demo screens.
+- **Pre-Refactor Analysis:**
+  1. Inspect existing frontend structure, design tokens, shared components, typography, and colors.
+  2. Identify "AI-generated UI" anti-patterns: generic uniform card radii, excessive gradients, gratuitous glassmorphism, repetitive card-grid layouts, cluttered icons/badges, weak typography hierarchy, and arbitrary spacing.
+  3. Summarize issues briefly and propose 2 distinct design directions aligned with product purpose. Pick the most rationale-driven approach before modifying code.
+- **Execution Rules:**
+  - Preserve brand identity, core content, and valid design tokens.
+  - Establish strong visual hierarchy with purposeful typography, spacing, and layout choices.
+  - Avoid AI aesthetic tropes (excessive gradients, glassmorphism, "AI purple", default Inter/Arial fonts, unnecessary card grids, decorative icons/animations).
+  - Design rhythm, clear empty/loading/error states, responsive grid breakpoints, and full accessibility (contrast, hover/focus states).
+
+---
+
+## 📋 10. Comprehensive AI Verification Checklist
 
 When auditing or reviewing code for any project in `D:\Hoa Hoang\Apps`, verify compliance against this checklist:
 
@@ -272,3 +291,5 @@ When auditing or reviewing code for any project in `D:\Hoa Hoang\Apps`, verify c
 - [ ] **Mock Data Generator:** `scripts/seed-mock-data.ts` present, seeds realistic domain records, runnable via `npm run db:seed`.
 - [ ] **Clean & Reset Scripts:** `scripts/clean-db.ts` present, deletes data in correct foreign-key reverse order, runnable via `npm run db:clean` / `npm run db:reset`.
 - [ ] **Code Quality:** TypeScript strict mode enabled, `type-only imports` used for types under `verbatimModuleSyntax`.
+- [ ] **Frontend Design (Skill frontend-design):** Business logic & API contract preserved 100%, AI-generated UI tropes eliminated, strong typography & visual hierarchy established, responsive & accessible states verified.
+

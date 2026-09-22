@@ -251,6 +251,78 @@ const INITIAL_APP_DATA: AppProject[] = [
     status: 'Production',
     priority: 'Medium',
     lastUpdated: Date.now()
+  },
+  {
+    id: 'app-vercel-mom-health',
+    name: 'MOM Health',
+    developer: 'Hoa Hoang',
+    github: 'https://github.com/johnnyhoang/mom_health',
+    frontendUrl: 'https://mom-health.vercel.app',
+    backendUrl: '',
+    hosting: 'Vercel',
+    database: 'Supabase (PostgreSQL)',
+    type: 'Web App',
+    description: 'Nền tảng y tế & theo dõi sức khỏe phụ nữ toàn diện: Phân tích tác dụng phụ Tamoxifen, xuất huyết âm đạo, rong kinh, thiếu máu, phác đồ điều trị K vú & phục hồi chức năng.',
+    techStack: 'React 19, TypeScript, Vite, TailwindCSS, Lucide Icons, Supabase',
+    techNotes: 'Vercel project: vercel.com/hoanghoa/mom-health. Bảng DB với prefix mh_ (mh_menstrual_cycles, mh_daily_logs, mh_app_settings). Tích hợp audio đọc báo cáo y khoa tự động và theo dõi chu kỳ.',
+    backlog: [
+      {
+        id: 'task-mom-1',
+        title: 'Tích hợp Supabase Auth & RLS cho nhật ký theo dõi triệt để',
+        isCompleted: true,
+        progress: 100,
+        assignee: 'Hoa Hoang',
+        priority: 'High',
+        createdAt: 1742600000000,
+        updatedAt: 1742600000000,
+        closedAt: 1742600000000
+      },
+      {
+        id: 'task-mom-2',
+        title: 'Tối ưu giao diện đọc báo cáo y khoa & audio player bar',
+        isCompleted: true,
+        progress: 100,
+        assignee: 'Hoa Hoang',
+        priority: 'Medium',
+        createdAt: 1742600000000,
+        updatedAt: 1742600000000,
+        closedAt: 1742600000000
+      },
+      {
+        id: 'task-mom-3',
+        title: 'Xây dựng schema DB mh_menstrual_cycles & mh_daily_logs',
+        isCompleted: true,
+        progress: 100,
+        assignee: 'Hoa Hoang',
+        priority: 'High',
+        createdAt: 1742600000000,
+        updatedAt: 1742600000000,
+        closedAt: 1742600000000
+      },
+      {
+        id: 'task-mom-4',
+        title: 'Tích hợp danh mục bác sĩ chuyên khoa & đặt lịch tư vấn',
+        isCompleted: false,
+        progress: 60,
+        assignee: 'Hoa Hoang',
+        priority: 'Medium',
+        createdAt: 1742600000000,
+        updatedAt: 1742600000000
+      },
+      {
+        id: 'task-mom-5',
+        title: 'Phát triển tính năng xuất báo cáo y khoa định dạng PDF cho bác sĩ',
+        isCompleted: false,
+        progress: 25,
+        assignee: 'Hoa Hoang',
+        priority: 'Low',
+        createdAt: 1742600000000,
+        updatedAt: 1742600000000
+      }
+    ],
+    status: 'Production',
+    priority: 'High',
+    lastUpdated: Date.now()
   }
 ];
 
@@ -298,7 +370,7 @@ export default function AppWallet() {
 
         // Merge strategy:
         // - INITIAL_APP_DATA is source-of-truth for app config (name, URL, description…)
-        // - DB (loadedApps) is source-of-truth for backlog items
+        // - DB (loadedApps) is source-of-truth for backlog items (if available)
         // - Deduplicate by id; any DB row whose id matches INITIAL gets its config overridden
         const initialById = new Map(INITIAL_APP_DATA.map(a => [a.id, a]));
 
@@ -307,8 +379,11 @@ export default function AppWallet() {
         for (const dbApp of loadedApps) {
           const initApp = initialById.get(dbApp.id);
           if (initApp) {
-            // Keep backlog from DB, everything else from INITIAL
-            mergedById.set(dbApp.id, { ...initApp, backlog: dbApp.backlog });
+            // Keep backlog from DB if non-empty, otherwise use initial backlog
+            mergedById.set(dbApp.id, {
+              ...initApp,
+              backlog: dbApp.backlog && dbApp.backlog.length > 0 ? dbApp.backlog : initApp.backlog
+            });
           } else {
             mergedById.set(dbApp.id, dbApp);
           }

@@ -111,6 +111,13 @@ Hãy kiểm tra toàn bộ mã nguồn và cấu hình của dự án hiện t�
 - [ ] Tích hợp script xóa sạch dữ liệu DB trong \`scripts/clean-db.ts\` (hoặc SQL TRUNCATE script)
 - [ ] Xóa đúng thứ tự ràng buộc khóa ngoại (Foreign Keys) để không bị vi phạm CASCADE constraints
 - [ ] Khai báo các lệnh \`npm run db:clean\` và \`npm run db:reset\` trong \`package.json\` để sẵn sàng cho Fresh Deployment
+
+## 10. 🎨 Quy Chuẩn Refactor UI Frontend (Skill frontend-design)
+- [ ] Giữ nguyên 100% Business Logic, API Contract, Route, State Management và hành vi đang hoạt động (không tạo màn hình demo)
+- [ ] Loại bỏ các dấu vết "AI-generated UI" (card bo góc lặp lại vô cơ, gradient màu lố, glassmorphism vô cớ, layout dashboard nhàm chán, icon/badge dư thừa)
+- [ ] Đọc & phân tích cấu trúc frontend, typography, design tokens trước khi sửa code
+- [ ] Đề xuất 2 phương án visual direction phù hợp và chốt 1 phương án có Visual Hierarchy mạnh mẽ
+- [ ] Kiểm tra responsive trên các breakpoint chính (Mobile, Tablet, Desktop) và các trạng thái Rỗng/Loading/Error, contrast & accessibility
 `;
     navigator.clipboard.writeText(markdown);
     setCopiedAll(true);
@@ -402,6 +409,11 @@ vercel --cwd apps/web --prod`} />
                   <td className="user-email-cell">📚 qlhs_dtnt</td>
                   <td><Tag color="#10b981">dtnt_</Tag></td>
                   <td style={{ textAlign: 'left' }}><code>dtnt_students</code>, <code>dtnt_evaluations</code></td>
+                </tr>
+                <tr>
+                  <td className="user-email-cell">🌸 MOM Health</td>
+                  <td><Tag color="#10b981">mh_</Tag></td>
+                  <td style={{ textAlign: 'left' }}><code>mh_menstrual_cycles</code>, <code>mh_daily_logs</code>, <code>mh_app_settings</code></td>
                 </tr>
               </tbody>
             </table>
@@ -697,6 +709,12 @@ app.use(cors({
                   <td><Tag color="#6366f1">http://localhost:5006</Tag></td>
                   <td>Vite + Express</td>
                 </tr>
+                <tr>
+                  <td className="user-email-cell">🌸 MOM Health</td>
+                  <td><Tag color="#10b981">http://localhost:5181</Tag></td>
+                  <td><Tag color="#64748b">N/A (Frontend Only)</Tag></td>
+                  <td>Vite (strictPort)</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -918,6 +936,63 @@ npm install @supabase/supabase-js
 
 # Cài react-router
 npm install react-router-dom`} />
+        </div>
+      )
+    },
+    {
+      id: 'frontend-design',
+      icon: '🎨',
+      title: 'Quy Chuẩn Refactor UI Frontend',
+      content: (
+        <div className="note-content">
+          <h2>Quy Chuẩn Refactor UI Frontend (Skill frontend-design)</h2>
+          <p className="note-desc">Quy trình & tiêu chuẩn refactor giao diện cho các dự án thật: Nâng cao chất lượng Visual Hierarchy, thiết kế có chủ đích, loại bỏ triệt để các dấu vết UI "AI-generated" mà <strong>KHÔNG làm thay đổi Business Logic, API Contract, Route, State Management hoặc Hành vi đang hoạt động</strong>.</p>
+
+          <h3>1. Quy Trình 3 Bước Trước Khi Sửa Code</h3>
+          <Step n={1}>
+            <p><strong>Nghiên cứu Cấu trúc Frontend:</strong> Đọc kỹ các component dùng chung, design tokens, typography, bảng màu hiện tại và mối liên hệ giữa các màn hình.</p>
+          </Step>
+          <Step n={2}>
+            <p><strong>Phát Hiện Dấu Vết "AI-Generated UI":</strong> Nhận biết và loại bỏ:</p>
+            <div className="note-checklist">
+              <label className="checklist-item"><span>❌ Card bo góc đồng loạt thiếu tính phân cấp (border-radius lặp lại vô cơ).</span></label>
+              <label className="checklist-item"><span>❌ Gradient trang trí màu lố, hiệu ứng glassmorphism / backdrop-blur vô cớ.</span></label>
+              <label className="checklist-item"><span>❌ Bố cục Card-Grid lặp lại nhàm chán trên toàn bộ trang dashboard.</span></label>
+              <label className="checklist-item"><span>❌ Quá nhiều Badge/Icon dư thừa không tăng giá trị truyền tải thông tin.</span></label>
+              <label className="checklist-item"><span>❌ Visual Hierarchy kém, typography và khoảng trắng (spacing) thiếu chủ đích.</span></label>
+            </div>
+          </Step>
+          <Step n={3}>
+            <p><strong>Đánh Giá & Đề Xuất 2 Hướng Thiết Kế:</strong> Tóm tắt ngắn gọn vấn đề UI hiện tại, đề xuất 2 phương án visual direction phù hợp nhất với mục đích sản phẩm và đối tượng người dùng. Chọn 1 phương án tối ưu nhất trước khi sửa code.</p>
+          </Step>
+
+          <h3>2. Nguyên Tắc Triển Khai Code Refactor UI</h3>
+          <div className="note-checklist">
+            <label className="checklist-item"><span>🎯 <strong>Bảo Tồn Brand & Chức Năng:</strong> Giữ lại nhận diện thương hiệu, nội dung, tính năng và design system hiện có nếu còn hợp lý.</span></label>
+            <label className="checklist-item"><span>🎨 <strong>Visual Direction Rõ Ràng:</strong> Thiết kế có hierarchy mạnh mẽ. Mọi lựa chọn về typography, spacing, màu sắc và layout đều phải có lý do cụ thể.</span></label>
+            <label className="checklist-item"><span>🚫 <strong>Nói KHÔNG Với Chi Tiết Dư Thừa:</strong> Cấm dùng gradient lố, glassmorphism, "AI purple", font Inter/Arial mặc định, card-grid lặp lại, icon trang trí, animation hoặc shadow nếu không phục vụ trải nghiệm người dùng thực tế.</span></label>
+            <label className="checklist-item"><span>📐 <strong>Layout Có Nhịp Điệu & Mật Độ Phù Hợp:</strong> Ưu tiên mật độ thông tin cân đối, xử lý chỉn chu các trạng thái Rỗng (Empty), Đang tải (Loading) và Lỗi (Error).</span></label>
+            <label className="checklist-item"><span>♻️ <strong>Tái Sử Dụng Component Hiện Có:</strong> Ưu tiên dùng lại các component có sẵn; chỉ tạo component mới khi giúp giảm bớt trùng lặp mã nguồn.</span></label>
+            <label className="checklist-item"><span>📱 <strong>Responsive & Accessible:</strong> Kiểm tra các breakpoint màn hình chính (Mobile, Tablet, Desktop), đảm bảo độ tương phản (contrast), trạng thái hover/focus và căn chỉnh alignment chính xác.</span></label>
+          </div>
+
+          <h3>3. Mẫu Prompt Chuẩn Đổi Cho AI / Subagent</h3>
+          <CodeBlock lang="text" code={`Dùng skill \`frontend-design\` để refactor UI hiện có. Đây là một dự án thật, không tạo màn hình demo, không thay đổi business logic, API contract, route, state management, hoặc hành vi đang hoạt động.
+
+Trước khi sửa code:
+1. Đọc cấu trúc frontend, component dùng chung, design tokens, typography, màu sắc và các màn hình liên quan.
+2. Xác định những dấu hiệu khiến UI hiện tại trông “AI-generated”: card bo góc đồng loạt, gradient trang trí, glassmorphism vô cớ, layout dashboard lặp lại, quá nhiều badge/icon, hierarchy kém, khoảng trắng và typography thiếu chủ đích.
+3. Tóm tắt ngắn vấn đề và đề xuất 2 hướng thiết kế phù hợp với mục đích sản phẩm và người dùng hiện tại. Chọn hướng hợp lý nhất rồi triển khai.
+
+Khi triển khai:
+- Giữ lại brand, nội dung, chức năng và design system hiện có nếu chúng còn hợp lý.
+- Thiết kế theo một visual direction rõ ràng, có hierarchy mạnh và có lý do cho từng lựa chọn về typography, spacing, màu, layout.
+- Không dùng gradient, glassmorphism, “AI purple”, font Inter/Arial mặc định, card-grid lặp lại, icon trang trí, animation hoặc shadow nếu không phục vụ trải nghiệm.
+- Ưu tiên bố cục có nhịp điệu, mật độ thông tin phù hợp, trạng thái rỗng/loading/error rõ ràng, responsive và accessible.
+- Tái sử dụng component hiện có khi phù hợp; chỉ tạo component mới khi thật sự giảm lặp code.
+- Sau khi hoàn tất, kiểm tra các breakpoint chính và sửa các lỗi visual như alignment, overflow, contrast, hover/focus state.
+
+Cuối cùng, báo cáo ngắn: những gì đã thay đổi, các file đã sửa, và các quyết định thiết kế quan trọng.`} />
         </div>
       )
     }
