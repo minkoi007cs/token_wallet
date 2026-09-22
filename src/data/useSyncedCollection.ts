@@ -23,6 +23,15 @@ export function useSyncedCollection<T extends { id: string }, R extends Record<s
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSyncingRef = useRef<boolean>(false);
 
+  const rowToItemRef = useRef(rowToItem);
+  rowToItemRef.current = rowToItem;
+
+  const itemToRowRef = useRef(itemToRow);
+  itemToRowRef.current = itemToRow;
+
+  const seedRef = useRef(seed);
+  seedRef.current = seed;
+
   // Load once on mount
   useEffect(() => {
     let isMounted = true;
@@ -39,8 +48,9 @@ export function useSyncedCollection<T extends { id: string }, R extends Record<s
           return;
         }
 
-        const loadedItems = ((data || []) as R[]).map((r) => rowToItem(r));
-        const finalItems = typeof seed === 'function' ? seed(loadedItems) : (loadedItems.length > 0 ? loadedItems : seed);
+        const loadedItems = ((data || []) as R[]).map((r) => rowToItemRef.current(r));
+        const currentSeed = seedRef.current;
+        const finalItems = typeof currentSeed === 'function' ? currentSeed(loadedItems) : (loadedItems.length > 0 ? loadedItems : currentSeed);
 
         snapshotRef.current = finalItems;
         setItems(finalItems);
@@ -83,7 +93,7 @@ export function useSyncedCollection<T extends { id: string }, R extends Record<s
         }
 
         if (plan.upsert.length > 0) {
-          const rowsToUpsert = plan.upsert.map(itemToRow);
+          const rowsToUpsert = plan.upsert.map((item) => itemToRowRef.current(item));
           const { error: upErr } = await supabase.from(table).upsert(rowsToUpsert as any);
           if (upErr) throw upErr;
         }

@@ -33,13 +33,16 @@ CREATE TABLE IF NOT EXISTS public.tkw_ai_tools (
 CREATE TABLE IF NOT EXISTS public.tkw_ai_accounts (
   id TEXT PRIMARY KEY,
   tool_id TEXT NOT NULL REFERENCES public.tkw_ai_tools(id) ON DELETE CASCADE,
-  email TEXT NOT NULL,
+  name TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'active',
-  reset_time BIGINT NOT NULL,
-  run_out_time BIGINT,
-  next_due_date BIGINT,
-  is_disabled BOOLEAN NOT NULL DEFAULT false,
-  note TEXT,
+  exhausted_type TEXT,
+  reset_time BIGINT,
+  due_date BIGINT,
+  due_amount NUMERIC,
+  due_note TEXT,
+  no_due BOOLEAN NOT NULL DEFAULT false,
+  disabled BOOLEAN NOT NULL DEFAULT false,
+  login_hint TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

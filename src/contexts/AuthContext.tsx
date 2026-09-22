@@ -23,12 +23,24 @@ const DEFAULT_USER_PERMISSIONS: UserPermissions = {
   can_edit_app_wallet: false,
 };
 
+const GUEST_PERMISSIONS: UserPermissions = {
+  role: 'admin',
+  can_read_token_wallet: true,
+  can_edit_token_wallet: true,
+  can_read_payments: true,
+  can_edit_payments: true,
+  can_read_app_wallet: true,
+  can_edit_app_wallet: true,
+};
+
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
   permissions: UserPermissions | null;
   isAdmin: boolean;
   isAuthLoading: boolean;
+  isGuestMode: boolean;
+  enableGuestMode: () => void;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshPermissions: () => Promise<void>;
@@ -38,8 +50,19 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [permissions, setPermissions] = useState<UserPermissions | null>(null);
+  const [permissions, setPermissions] = useState<UserPermissions | null>(() => {
+    return localStorage.getItem('tkw_guest_mode') === 'true' ? GUEST_PERMISSIONS : null;
+  });
+  const [isGuestMode, setIsGuestMode] = useState<boolean>(() => {
+    return localStorage.getItem('tkw_guest_mode') === 'true';
+  });
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  const enableGuestMode = () => {
+    setIsGuestMode(true);
+    setPermissions(GUEST_PERMISSIONS);
+    localStorage.setItem('tkw_guest_mode', 'true');
+  };
 
   async function loadPermissions(userId: string, email: string) {
     const isOwnerAdmin = email.toLowerCase() === 'hoang.hoa@gmail.com';
@@ -134,6 +157,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
+    localStorage.removeItem('tkw_guest_mode');
+    setIsGuestMode(false);
     await supabase.auth.signOut();
     setPermissions(null);
   }
@@ -144,6 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       session, user, permissions, isAdmin, isAuthLoading,
+      isGuestMode, enableGuestMode,
       signInWithGoogle, signOut, refreshPermissions,
     }}>
       {children}

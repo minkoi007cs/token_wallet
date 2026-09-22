@@ -868,6 +868,124 @@ header h1 svg {
   50%       { opacity: 0.4; }
 }
 
+/* ── Account Card Right Side & Quick Actions ── */
+.account-card-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.account-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.account-card:hover .account-quick-actions {
+  opacity: 1;
+}
+
+.btn-quick-toggle {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-quick-toggle.to-exhaust {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.btn-quick-toggle.to-exhaust:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  color: #ffffff;
+}
+
+.btn-quick-toggle.to-active {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.btn-quick-toggle.to-active:hover {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+/* ── 1-Click Copy Login Hint Pill ── */
+.account-hint-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border);
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.account-hint-pill:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: var(--color-accent);
+  color: #ffffff;
+}
+
+.account-hint-pill.copied {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: var(--color-active);
+  color: #34d399;
+}
+
+.copied-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #34d399;
+}
+
+/* ── Preset Duration Chips in Modal ── */
+.preset-chips-row {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.preset-chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--color-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.preset-chip:hover {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #ffffff;
+}
+
 /* ── App Wallet Specific ── */
 .tabs {
   display: flex;

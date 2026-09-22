@@ -22,13 +22,16 @@ describe('mappers round-trips', () => {
   it('round-trips Account fully populated', () => {
     const account: Account = {
       id: 'acc-1',
-      email: 'test@example.com',
-      status: 'active',
-      resetTime: 1700000000000,
-      runOutTime: 1700003600000,
-      nextDueDate: 1700086400000,
-      isDisabled: true,
-      note: 'Test note',
+      name: 'hoa.hoang@cbtw.tech',
+      status: 'exhausted',
+      exhaustedType: 'custom',
+      resetTime: 1790001026688,
+      dueDate: 1790035200000,
+      dueAmount: 135556,
+      dueNote: 'Team quota',
+      noDue: false,
+      disabled: false,
+      loginHint: 'check mail hoang.hoa@gmail.com',
     };
     const row = accountToRow(account, 'tool-1');
     const restored = rowToAccount(row);

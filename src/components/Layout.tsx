@@ -7,7 +7,7 @@ import { WalletIcon, SettingsIcon, GoogleIcon } from './icons';
 
 export default function Layout() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const { user, isAdmin, permissions, signInWithGoogle, signOut, isAuthLoading } = useAuth();
+  const { user, isAdmin, signInWithGoogle, signOut, isAuthLoading } = useAuth();
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('app_theme') || 'dark';
@@ -33,22 +33,18 @@ export default function Layout() {
             >
               App Wallet
             </NavLink>
-            {permissions?.can_read_token_wallet && (
-              <NavLink
-                to="/token-wallet"
-                className={({ isActive }) => `tab-btn ${isActive ? 'active' : ''}`}
-              >
-                Token Wallet
-              </NavLink>
-            )}
-            {permissions?.can_read_payments && (
-              <NavLink
-                to="/payments"
-                className={({ isActive }) => `tab-btn ${isActive ? 'active' : ''}`}
-              >
-                Hạn thanh toán
-              </NavLink>
-            )}
+            <NavLink
+              to="/token-wallet"
+              className={({ isActive }) => `tab-btn ${isActive ? 'active' : ''}`}
+            >
+              Token Wallet
+            </NavLink>
+            <NavLink
+              to="/payments"
+              className={({ isActive }) => `tab-btn ${isActive ? 'active' : ''}`}
+            >
+              Hạn thanh toán
+            </NavLink>
           </div>
         </div>
         <div className="header-actions">

@@ -4,8 +4,6 @@ import { applyTheme } from '../utils/theme';
 import { useAuth } from '../contexts/AuthContext';
 import UserManagement from '../pages/UserManagement';
 
-export { applyTheme };
-
 export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const { isAdmin } = useAuth();
   const [theme, setTheme] = useState(localStorage.getItem('app_theme') || 'dark');

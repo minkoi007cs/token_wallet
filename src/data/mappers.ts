@@ -5,24 +5,31 @@
 export interface AccountRow {
   id: string;
   tool_id: string;
-  email: string;
-  status?: string;
-  reset_time: number | string;
-  run_out_time?: number | string | null;
-  next_due_date?: number | string | null;
-  is_disabled?: boolean;
-  note?: string;
+  name: string;
+  status: string;
+  exhausted_type?: string | null;
+  reset_time?: number | string | null;
+  due_date?: number | string | null;
+  due_amount?: number | string | null;
+  due_note?: string | null;
+  no_due?: boolean | null;
+  disabled?: boolean | null;
+  login_hint?: string | null;
+  created_at?: string | null;
 }
 
 export interface Account {
   id: string;
-  email: string;
-  status: 'active' | 'run-out';
-  resetTime: number;
-  runOutTime?: number;
-  nextDueDate?: number;
-  isDisabled?: boolean;
-  note?: string;
+  name: string;
+  status: 'active' | 'exhausted';
+  exhaustedType?: '5h' | 'weekly' | 'custom';
+  resetTime?: number;
+  dueDate?: number;
+  dueAmount?: number;
+  dueNote?: string;
+  noDue?: boolean;
+  disabled?: boolean;
+  loginHint?: string;
 }
 
 export interface ToolRow {
@@ -30,12 +37,13 @@ export interface ToolRow {
   name: string;
   reset_cycle_hours?: number;
   display_order?: number;
+  created_at?: string | null;
 }
 
 export interface AITool {
   id: string;
   name: string;
-  resetCycleHours: number;
+  resetCycleHours?: number;
   displayOrder?: number;
   accounts: Account[];
 }
@@ -117,13 +125,16 @@ export interface PaymentScheduleItem {
 export function rowToAccount(row: AccountRow): Account {
   return {
     id: row.id,
-    email: row.email,
-    status: row.status === 'run-out' ? 'run-out' : 'active',
-    resetTime: Number(row.reset_time),
-    runOutTime: row.run_out_time ? Number(row.run_out_time) : undefined,
-    nextDueDate: row.next_due_date ? Number(row.next_due_date) : undefined,
-    isDisabled: Boolean(row.is_disabled),
-    note: row.note || undefined,
+    name: row.name || 'Unnamed Account',
+    status: row.status === 'exhausted' ? 'exhausted' : 'active',
+    exhaustedType: (row.exhausted_type as Account['exhaustedType']) || undefined,
+    resetTime: row.reset_time != null ? Number(row.reset_time) : undefined,
+    dueDate: row.due_date != null ? Number(row.due_date) : undefined,
+    dueAmount: row.due_amount != null ? Number(row.due_amount) : undefined,
+    dueNote: row.due_note || undefined,
+    noDue: Boolean(row.no_due),
+    disabled: Boolean(row.disabled),
+    loginHint: row.login_hint || undefined,
   };
 }
 
@@ -131,13 +142,16 @@ export function accountToRow(account: Account, toolId: string): AccountRow {
   return {
     id: account.id,
     tool_id: toolId,
-    email: account.email,
+    name: account.name,
     status: account.status,
-    reset_time: account.resetTime,
-    run_out_time: account.runOutTime || null,
-    next_due_date: account.nextDueDate || null,
-    is_disabled: Boolean(account.isDisabled),
-    note: account.note || '',
+    exhausted_type: account.exhaustedType || null,
+    reset_time: account.resetTime != null ? account.resetTime : null,
+    due_date: account.dueDate != null ? account.dueDate : null,
+    due_amount: account.dueAmount != null ? account.dueAmount : null,
+    due_note: account.dueNote || null,
+    no_due: Boolean(account.noDue),
+    disabled: Boolean(account.disabled),
+    login_hint: account.loginHint || null,
   };
 }
 
@@ -155,7 +169,7 @@ export function toolToRow(tool: AITool): ToolRow {
   return {
     id: tool.id,
     name: tool.name,
-    reset_cycle_hours: tool.resetCycleHours,
+    reset_cycle_hours: tool.resetCycleHours || 5,
     display_order: tool.displayOrder || 0,
   };
 }
