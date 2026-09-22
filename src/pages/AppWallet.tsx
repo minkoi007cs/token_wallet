@@ -6,7 +6,6 @@ import {
   appProjectToRow,
   rowToBacklogItem,
   backlogItemToRow,
-  seedIfEmpty,
   type AppProject,
   type BacklogItem,
   type AppProjectRow,
@@ -20,31 +19,6 @@ import { useAuth } from '../contexts/AuthContext';
 
 export type { AppProject, BacklogItem };
 
-const INITIAL_APP_DATA: AppProject[] = [
-  {
-    id: 'app-github-tokenwallet',
-    title: 'Token Wallet',
-    frontendUrl: 'https://token-wallet-chi.vercel.app',
-    category: 'Web App',
-    status: 'Production',
-    priority: 'High',
-    description: 'Quản lý hạn mức quota và danh mục ứng dụng portfolio.',
-    isDisabled: false,
-    backlog: [],
-  },
-  {
-    id: 'app-github-beth',
-    title: 'BETH',
-    frontendUrl: 'https://beth-theta.vercel.app',
-    category: 'Web App',
-    status: 'Production',
-    priority: 'High',
-    description: 'Nền tảng bot giao dịch định lượng tiền điện tử.',
-    isDisabled: false,
-    backlog: [],
-  },
-];
-
 export default function AppWallet() {
   const { permissions } = useAuth();
   const canEdit = !!permissions?.can_edit_app_wallet;
@@ -56,7 +30,7 @@ export default function AppWallet() {
     table: 'tkw_app_projects',
     rowToItem: rowToAppProject,
     itemToRow: appProjectToRow,
-    seed: seedIfEmpty([], INITIAL_APP_DATA),
+    seed: (loaded) => loaded,
   });
 
   const { items: backlogItems, setItems: setBacklogItems } = useSyncedCollection<
@@ -69,6 +43,7 @@ export default function AppWallet() {
       projectId: row.project_id,
     }),
     itemToRow: (item) => backlogItemToRow(item, item.projectId),
+    seed: (loaded) => loaded,
   });
 
   const [searchQuery, setSearchQuery] = useState('');

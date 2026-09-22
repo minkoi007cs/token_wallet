@@ -6,7 +6,7 @@ interface UseSyncedCollectionOptions<T, R> {
   table: string;
   rowToItem: (row: R) => T;
   itemToRow: (item: T) => R;
-  seed?: T[];
+  seed?: T[] | ((loaded: T[]) => T[]);
 }
 
 export function useSyncedCollection<T extends { id: string }, R extends Record<string, any>>({
@@ -40,7 +40,7 @@ export function useSyncedCollection<T extends { id: string }, R extends Record<s
         }
 
         const loadedItems = ((data || []) as R[]).map((r) => rowToItem(r));
-        const finalItems = loadedItems.length > 0 ? loadedItems : seed;
+        const finalItems = typeof seed === 'function' ? seed(loadedItems) : (loadedItems.length > 0 ? loadedItems : seed);
 
         snapshotRef.current = finalItems;
         setItems(finalItems);
