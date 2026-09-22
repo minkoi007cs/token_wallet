@@ -15,12 +15,12 @@ This skill provides the mandatory architectural patterns, security standards, lo
 ## 🔑 1. Google OAuth & Supabase Auth Integration
 
 ### Authentication Architecture
-- **Auth Broker:** Dùng Supabase Auth (`@supabase/supabase-js`) cho Google Login với `VITE_SUPABASE_URL` & `VITE_SUPABASE_ANON_KEY`. Frontend apps không bao giờ lưu trữ hoặc xử lý mật khẩu thô.
+- **Auth Broker:** Dùng Supabase Auth (`@supabase/supabase-js`) cho Google Login với `VITE_SUPABASE_URL` & `VITE_SUPABASE_ANON_KEY` (nếu dùng Vite) hoặc `NEXT_PUBLIC_SUPABASE_URL` & `NEXT_PUBLIC_SUPABASE_ANON_KEY` (nếu dùng Next.js App Router). Frontend apps không bao giờ lưu trữ hoặc xử lý mật khẩu thô.
 - **Provider Setup:**
   - Google Cloud Console: OAuth 2.0 Web Client ID.
   - Authorized Redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`
 - **Frontend Integration Pattern:**
-  - Client Instance: Dùng `@supabase/supabase-js` khởi tạo `supabaseClient` với `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY`.
+  - Client Instance: Dùng `@supabase/supabase-js` khởi tạo `supabaseClient` với `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` (nếu dùng Vite) hoặc `NEXT_PUBLIC_SUPABASE_URL` và `NEXT_PUBLIC_SUPABASE_ANON_KEY` (nếu dùng Next.js App Router).
   - Sign-in call:
     ```typescript
     await supabase.auth.signInWithOAuth({
@@ -284,7 +284,7 @@ When refactoring UI for production applications using the `frontend-design` skil
 
 When auditing or reviewing code for any project in `D:\Hoa Hoang\Apps`, verify compliance against this checklist:
 
-- [ ] **Google OAuth & Supabase Auth:** Dùng Supabase Auth (`@supabase/supabase-js`) cho Google Login với `VITE_SUPABASE_URL` & `VITE_SUPABASE_ANON_KEY`, provider configured, `signInWithOAuth` uses `window.location.origin`, RLS active on user tables.
+- [ ] **Google OAuth & Supabase Auth:** Dùng Supabase Auth (`@supabase/supabase-js`) cho Google Login với `VITE_SUPABASE_URL` & `VITE_SUPABASE_ANON_KEY` (nếu dùng Vite) hoặc `NEXT_PUBLIC_SUPABASE_URL` & `NEXT_PUBLIC_SUPABASE_ANON_KEY` (nếu code Next.js App Router), provider configured, `signInWithOAuth` uses `window.location.origin`, RLS active on user tables.
 - [ ] **Monorepo & Vercel:** Correct Root Directory set per Vercel Project, frontend env vars use `VITE_` / `NEXT_PUBLIC_`.
 - [ ] **Fixed Local Ports:** Port assigned from allocation table with `strictPort: true` in `vite.config.ts` or `-p <port>` in Next.js.
 - [ ] **Auth Isolation:** Sub-app origin registered in Supabase Auth Whitelist, `redirectTo` explicitly passed.

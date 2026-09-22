@@ -62,7 +62,7 @@ Hãy kiểm tra toàn bộ mã nguồn và cấu hình của dự án hiện t�
 
 ## 1. 🔑 Google Login & Supabase Auth Integration
 - [ ] Bật Google OAuth Provider trong Supabase Dashboard với Authorized Redirect URI \`https://<project-ref>.supabase.co/auth/v1/callback\`
-- [ ] Dùng Supabase Auth (\`@supabase/supabase-js\`) cho Google Login với \`VITE_SUPABASE_URL\` & \`VITE_SUPABASE_ANON_KEY\`
+- [ ] Dùng Supabase Auth (\`@supabase/supabase-js\`) cho Google Login với \`VITE_SUPABASE_URL\` & \`VITE_SUPABASE_ANON_KEY\` nếu dùng Vite, hoặc \`NEXT_PUBLIC_SUPABASE_URL\` & \`NEXT_PUBLIC_SUPABASE_ANON_KEY\` nếu code Next.js App Router
 - [ ] Nút login gọi \`signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })\`
 - [ ] Lắng nghe session thay đổi tự động qua \`supabase.auth.onAuthStateChange\`
 - [ ] Kiểm tra session trên mọi Protected Route trước khi render UI
@@ -140,7 +140,7 @@ Hãy kiểm tra toàn bộ mã nguồn và cấu hình của dự án hiện t�
       title: 'Google Login + Supabase Auth',
       auditPrompt: `Dùng skill \`source-driven-development\` và \`security-and-hardening\` để audit và nâng cấp tích hợp Google OAuth + Supabase Auth trong ứng dụng này:
 
-1. Kiểm tra cấu hình \`supabaseClient\` trong \`utils/supabaseClient.ts\`: Bắt buộc dùng Supabase Auth (\`@supabase/supabase-js\`) cho Google Login với \`VITE_SUPABASE_URL\` & \`VITE_SUPABASE_ANON_KEY\`.
+1. Kiểm tra cấu hình \`supabaseClient\` trong \`utils/supabaseClient.ts\`: Bắt buộc dùng Supabase Auth (\`@supabase/supabase-js\`) cho Google Login với \`VITE_SUPABASE_URL\` & \`VITE_SUPABASE_ANON_KEY\` (nếu dùng Vite) hoặc \`NEXT_PUBLIC_SUPABASE_URL\` & \`NEXT_PUBLIC_SUPABASE_ANON_KEY\` (nếu code Next.js App Router).
 2. Kiểm tra hàm \`signInWithOAuth\` trong AuthContext đã truyền \`provider: 'google'\` và \`options: { redirectTo: window.location.origin }\`.
 3. Kiểm tra tự động sync session qua \`supabase.auth.onAuthStateChange\` và bảo vệ Protected Routes.
 4. Kiểm tra Row Level Security (RLS) cho tất cả các bảng DB liên quan (\`auth.uid() = user_id\`).
@@ -189,12 +189,19 @@ http://localhost:5173`} />
           <h3>Bước 3 — Code phía Frontend</h3>
           <Alert type="info">Dùng <code>@supabase/supabase-js</code>. Không cần cài thêm gì cho Google OAuth.</Alert>
 
-          <CodeBlock lang="typescript" code={`// utils/supabaseClient.ts
+          <CodeBlock lang="typescript" code={`// utils/supabaseClient.ts (Vite)
 import { createClient } from '@supabase/supabase-js';
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY
-);`} />
+);
+
+// lib/supabaseClient.ts (Next.js App Router)
+// import { createClient } from '@supabase/supabase-js';
+// export const supabase = createClient(
+//   process.env.NEXT_PUBLIC_SUPABASE_URL!,
+//   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// );`} />
 
           <CodeBlock lang="typescript" code={`// AuthContext.tsx — signInWithGoogle
 async function signInWithGoogle() {
@@ -237,9 +244,13 @@ SELECT auth.jwt() ->> 'email';`} />
           </Alert>
 
           <h3>Variables môi trường</h3>
-          <CodeBlock lang="bash" code={`# .env.local
+          <CodeBlock lang="bash" code={`# .env.local (Dành cho Vite)
 VITE_SUPABASE_URL=https://xxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGci...
+
+# .env.local (Dành cho Next.js App Router)
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
 
 # Anon key là PUBLIC — an toàn để expose trong frontend
 # Service Role key là PRIVATE — chỉ dùng ở server/backend`} />
@@ -936,7 +947,7 @@ Báo cáo danh sách các mục ĐẠT / CHƯA ĐẠT và tự động nâng c�
           <h3>🔐 Authentication</h3>
           <div className="note-checklist">
             {[
-              'Dùng Supabase Auth (@supabase/supabase-js) cho Google Login với VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY',
+              'Dùng Supabase Auth (@supabase/supabase-js) cho Google Login với VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY (Vite) hoặc NEXT_PUBLIC_SUPABASE_URL & NEXT_PUBLIC_SUPABASE_ANON_KEY (Next.js App Router)',
               'onAuthStateChange để sync session toàn app',
               'Redirect về đúng page sau login (redirectTo)',
               'Sign out xóa session + clear local state',
