@@ -8,6 +8,55 @@
  *  - Date only:  "Jun 12", "12 Jun", "Jun 12 2026", "12 Jun 2026"
  *  - Date+Time:  "Jun 12 2:36PM", "12 Jun 2:36PM", "Jun 12 2026 14:30"
  */
+
+// Static Dictionaries pre-allocated at module scope
+const MONTHS: Record<string, number> = {
+  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+  january: 0, february: 1, march: 2, april: 3, june: 5,
+  july: 6, august: 7, september: 8, october: 9, november: 10, december: 11
+};
+
+const DAYS_OF_WEEK: Record<string, number> = {
+  sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6,
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6
+};
+
+const MONTH_NAMES_LIST = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const DAY_NAMES_LIST = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+// Pre-compiled regex instances for peak execution speed
+const TIME_TOKEN_REGEX = /^(\d{1,2}):(\d{2})\s*(am|pm)?$/i;
+const TIME_ONLY_REGEX = /^(?:at\s+)?(\d{1,2}:\d{2}\s*(?:am|pm)?)$/i;
+
+const monthPatternNames = Object.keys(MONTHS).filter(k => k.length >= 3).join('|');
+const DATE_PATTERN = new RegExp(
+  `^(?:(\\d{1,2})\\s+)?(${monthPatternNames})(?:\\s+(\\d{1,2}))?(?:\\s+(\\d{4}))?(?:\\s+(\\d{1,2}:\\d{2}(?:\\s*(?:am|pm))?))?$`,
+  'i'
+);
+
+const dowPatternNames = Object.keys(DAYS_OF_WEEK).join('|');
+const DOW_PATTERN = new RegExp(`^(?:next\\s+)?(${dowPatternNames})(?:\\s+(\\d{1,2}:\\d{2}(?:\\s*(?:am|pm))?))?$`, 'i');
+
+const RELATIVE_REGEX = /(\d+(?:\.\d+)?)\s*(d|day|days|w|week|weeks|h|hr|hrs|hour|hours|m|min|mins|minute|minutes|s|sec|secs|second|seconds)\b/gi;
+const BARE_NUMBER_REGEX = /^\d+(\.\d+)?$/;
+
+function parseTimeToken(token: string): { hour: number; minute: number } | null {
+  const m = token.match(TIME_TOKEN_REGEX);
+  if (!m) return null;
+  let hour = parseInt(m[1], 10);
+  const minute = parseInt(m[2], 10);
+  const ampm = m[3]?.toLowerCase();
+  if (ampm === 'pm' && hour < 12) hour += 12;
+  if (ampm === 'am' && hour === 12) hour = 0;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return { hour, minute };
+}
+
 export function parseResetTime(input: string): number | null {
   const cleanInput = input.trim().toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ');
   if (!cleanInput) return null;
@@ -15,42 +64,14 @@ export function parseResetTime(input: string): number | null {
   const now = new Date();
   const currentTimestamp = now.getTime();
 
-  // --- Month name lookup ---
-  const MONTHS: Record<string, number> = {
-    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
-    january: 0, february: 1, march: 2, april: 3, june: 5,
-    july: 6, august: 7, september: 8, october: 9, november: 10, december: 11
-  };
-
-  // --- Helper: parse a "H:MM am/pm" or "H:MM" time token ---
-  function parseTimeToken(token: string): { hour: number; minute: number } | null {
-    const m = token.match(/^(\d{1,2}):(\d{2})\s*(am|pm)?$/i);
-    if (!m) return null;
-    let hour = parseInt(m[1], 10);
-    const minute = parseInt(m[2], 10);
-    const ampm = m[3]?.toLowerCase();
-    if (ampm === 'pm' && hour < 12) hour += 12;
-    if (ampm === 'am' && hour === 12) hour = 0;
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-    return { hour, minute };
-  }
-
-  // 1a. Named-month date parsing: "Jun 12", "12 Jun", "Jun 12 2026", "Jun 12 2:36PM", etc.
-  // Build a pattern: (month name) or (day + month name) or (month name + day), optional year, optional time
-  const monthNames = Object.keys(MONTHS).filter(k => k.length >= 3).join('|');
-  const datePattern = new RegExp(
-    `^(?:(\\d{1,2})\\s+)?(${monthNames})(?:\\s+(\\d{1,2}))?(?:\\s+(\\d{4}))?(?:\\s+(\\d{1,2}:\\d{2}(?:\\s*(?:am|pm))?))?$`,
-    'i'
-  );
-  const dateMatch = cleanInput.match(datePattern);
-
+  // 1a. Named-month date parsing
+  const dateMatch = cleanInput.match(DATE_PATTERN);
   if (dateMatch) {
-    const prefixDay  = dateMatch[1]; // day before month: "12 Jun"
-    const monthStr   = dateMatch[2]; // month name
-    const suffixDay  = dateMatch[3]; // day after month: "Jun 12"
-    const yearStr    = dateMatch[4]; // optional year
-    const timeStr    = dateMatch[5]; // optional time
+    const prefixDay = dateMatch[1];
+    const monthStr = dateMatch[2];
+    const suffixDay = dateMatch[3];
+    const yearStr = dateMatch[4];
+    const timeStr = dateMatch[5];
 
     const monthIdx = MONTHS[monthStr.toLowerCase()];
     const day = parseInt(prefixDay || suffixDay || '1', 10);
@@ -62,7 +83,6 @@ export function parseResetTime(input: string): number | null {
 
     const target = new Date(year, monthIdx, day, hour, minute, 0, 0);
 
-    // If the date is in the past, advance to next year (only when no year was explicitly given)
     if (!yearStr && target.getTime() <= currentTimestamp) {
       target.setFullYear(target.getFullYear() + 1);
     }
@@ -71,8 +91,7 @@ export function parseResetTime(input: string): number | null {
   }
 
   // 1b. Time-only patterns like "at 4:27pm", "4:27pm", "16:30"
-  const timeOnlyRegex = /^(?:at\s+)?(\d{1,2}:\d{2}\s*(?:am|pm)?)$/i;
-  const timeOnlyMatch = cleanInput.match(timeOnlyRegex);
+  const timeOnlyMatch = cleanInput.match(TIME_ONLY_REGEX);
   if (timeOnlyMatch) {
     const parsed = parseTimeToken(timeOnlyMatch[1].trim());
     if (parsed) {
@@ -86,31 +105,24 @@ export function parseResetTime(input: string): number | null {
   }
 
   // 1c. Day-of-week + Optional Time: "Fri 1:00 AM", "Friday", "next Mon 16:30"
-  const DAYS_OF_WEEK: Record<string, number> = {
-    sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6,
-    sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6
-  };
-  const dowNames = Object.keys(DAYS_OF_WEEK).join('|');
-  const dowPattern = new RegExp(`^(?:next\\s+)?(${dowNames})(?:\\s+(\\d{1,2}:\\d{2}(?:\\s*(?:am|pm))?))?$`, 'i');
-  const dowMatch = cleanInput.match(dowPattern);
+  const dowMatch = cleanInput.match(DOW_PATTERN);
   if (dowMatch) {
     const dowStr = dowMatch[1];
     const timeStr = dowMatch[2];
-    
+
     const parsed = timeStr ? parseTimeToken(timeStr.trim()) : { hour: 0, minute: 0 };
     if (parsed) {
       const targetDOW = DAYS_OF_WEEK[dowStr.toLowerCase()];
       const target = new Date(now);
       target.setHours(parsed.hour, parsed.minute, 0, 0);
-      
+
       const currentDOW = target.getDay();
       let daysToAdd = (targetDOW - currentDOW + 7) % 7;
-      
-      // If today is target DOW but time is already past, assume next week
+
       if (daysToAdd === 0 && target.getTime() <= currentTimestamp) {
         daysToAdd = 7;
       }
-      
+
       target.setDate(target.getDate() + daysToAdd);
       return target.getTime();
     }
@@ -119,13 +131,15 @@ export function parseResetTime(input: string): number | null {
   // 2. Relative duration: "5h", "2 days 3 hours", "1 week", "in 3h 20m"
   let totalMs = 0;
   let parsedAny = false;
-  const relativeRegex = /(\d+(?:\.\d+)?)\s*(d|day|days|w|week|weeks|h|hr|hrs|hour|hours|m|min|mins|minute|minutes|s|sec|secs|second|seconds)\b/g;
-  let match;
-  while ((match = relativeRegex.exec(cleanInput)) !== null) {
+
+  // Reset lastIndex for global regex
+  RELATIVE_REGEX.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = RELATIVE_REGEX.exec(cleanInput)) !== null) {
     const value = parseFloat(match[1]);
-    const unit = match[2];
+    const unit = match[2].toLowerCase();
     parsedAny = true;
-    if (unit.startsWith('w'))      totalMs += value * 7 * 24 * 60 * 60 * 1000;
+    if (unit.startsWith('w')) totalMs += value * 7 * 24 * 60 * 60 * 1000;
     else if (unit.startsWith('d')) totalMs += value * 24 * 60 * 60 * 1000;
     else if (unit.startsWith('h')) totalMs += value * 60 * 60 * 1000;
     else if (unit.startsWith('m')) totalMs += value * 60 * 1000;
@@ -134,7 +148,7 @@ export function parseResetTime(input: string): number | null {
   if (parsedAny && totalMs > 0) return currentTimestamp + totalMs;
 
   // 3. Bare number → assume hours
-  if (/^\d+(\.\d+)?$/.test(cleanInput)) {
+  if (BARE_NUMBER_REGEX.test(cleanInput)) {
     return currentTimestamp + parseFloat(cleanInput) * 60 * 60 * 1000;
   }
 
@@ -171,9 +185,9 @@ export function formatCountdown(targetTime: number, now: number = Date.now()): s
 export function formatResetTime(targetTime: number): string {
   const target = new Date(targetTime);
   const now = new Date();
-  
+
   const isToday = target.toDateString() === now.toDateString();
-  
+
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
   const isTomorrow = target.toDateString() === tomorrow.toDateString();
@@ -193,13 +207,11 @@ export function formatResetTime(targetTime: number): string {
     return `Tomorrow at ${timeString}`;
   }
 
-  const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const dayName = daysOfWeek[target.getDay()];
-  
-  // If it's within the next 7 days, just show the day name, else show date
+  const dayName = DAY_NAMES_LIST[target.getDay()];
+
   const diffTime = target.getTime() - now.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays < 7) {
     return `${dayName} at ${timeString}`;
   }
@@ -244,21 +256,16 @@ export function formatVerboseCountdown(targetTime: number, now: number = Date.no
 export function formatVerboseResetTime(targetTime: number): string {
   const target = new Date(targetTime);
   const day = target.getDate();
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  const month = months[target.getMonth()];
+  const month = MONTH_NAMES_LIST[target.getMonth()];
   const year = target.getFullYear();
   const hours = target.getHours();
   const minutes = String(target.getMinutes()).padStart(2, '0');
-  
+
   return `${day} ${month} ${year} ${hours}:${minutes}`;
 }
 
 /**
  * Returns a duration string always split as "X days Y hours Z min"
- * e.g. 49h 59m → "2 days 1 hours 59 min", 3h 20m → "0 days 3 hours 20 min"
  */
 export function getRemainingDurationString(targetTime: number, now: number = Date.now()): string {
   const diff = targetTime - now;
