@@ -62,7 +62,7 @@ Hãy kiểm tra toàn bộ mã nguồn và cấu hình của dự án hiện t�
 
 ## 1. 🔑 Google Login & Supabase Auth Integration
 - [ ] Bật Google OAuth Provider trong Supabase Dashboard với Authorized Redirect URI \`https://<project-ref>.supabase.co/auth/v1/callback\`
-- [ ] Frontend dùng \`@supabase/supabase-js\` để tạo \`supabaseClient\` từ \`VITE_SUPABASE_URL\` & \`VITE_SUPABASE_ANON_KEY\`
+- [ ] Dùng Supabase Auth (\`@supabase/supabase-js\`) cho Google Login với \`VITE_SUPABASE_URL\` & \`VITE_SUPABASE_ANON_KEY\`
 - [ ] Nút login gọi \`signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })\`
 - [ ] Lắng nghe session thay đổi tự động qua \`supabase.auth.onAuthStateChange\`
 - [ ] Kiểm tra session trên mọi Protected Route trước khi render UI
@@ -140,7 +140,7 @@ Hãy kiểm tra toàn bộ mã nguồn và cấu hình của dự án hiện t�
       title: 'Google Login + Supabase Auth',
       auditPrompt: `Dùng skill \`source-driven-development\` và \`security-and-hardening\` để audit và nâng cấp tích hợp Google OAuth + Supabase Auth trong ứng dụng này:
 
-1. Kiểm tra cấu hình \`supabaseClient\` trong \`utils/supabaseClient.ts\` xem đã sử dụng đúng \`@supabase/supabase-js\` với \`VITE_SUPABASE_URL\` và \`VITE_SUPABASE_ANON_KEY\`.
+1. Kiểm tra cấu hình \`supabaseClient\` trong \`utils/supabaseClient.ts\`: Bắt buộc dùng Supabase Auth (\`@supabase/supabase-js\`) cho Google Login với \`VITE_SUPABASE_URL\` & \`VITE_SUPABASE_ANON_KEY\`.
 2. Kiểm tra hàm \`signInWithOAuth\` trong AuthContext đã truyền \`provider: 'google'\` và \`options: { redirectTo: window.location.origin }\`.
 3. Kiểm tra tự động sync session qua \`supabase.auth.onAuthStateChange\` và bảo vệ Protected Routes.
 4. Kiểm tra Row Level Security (RLS) cho tất cả các bảng DB liên quan (\`auth.uid() = user_id\`).
@@ -936,7 +936,7 @@ Báo cáo danh sách các mục ĐẠT / CHƯA ĐẠT và tự động nâng c�
           <h3>🔐 Authentication</h3>
           <div className="note-checklist">
             {[
-              'Google OAuth qua Supabase (không tự build auth)',
+              'Dùng Supabase Auth (@supabase/supabase-js) cho Google Login với VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY',
               'onAuthStateChange để sync session toàn app',
               'Redirect về đúng page sau login (redirectTo)',
               'Sign out xóa session + clear local state',
