@@ -83,16 +83,21 @@ export default function UserManagement() {
   }
 
   return (
-    <div className="page-container user-mgmt-page">
-      <div className="user-mgmt-header">
-        <h2>👥 Quản lý người dùng</h2>
-        <button className="btn" onClick={loadUsers}>🔄 Làm mới</button>
+    <div className="user-mgmt-container" style={{ padding: '0.25rem 0' }}>
+      <div className="user-mgmt-header" style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Quản lý người dùng & phân quyền</h3>
+        <button className="btn btn-secondary" onClick={loadUsers} style={{ fontSize: '0.8rem', padding: '0.3rem 0.75rem' }}>
+          🔄 Làm mới
+        </button>
       </div>
 
       {isLoading ? (
-        <div className="protected-loading"><div className="protected-spinner" /><p>Đang tải...</p></div>
+        <div className="protected-loading" style={{ padding: '2rem 0' }}>
+          <div className="protected-spinner" />
+          <p>Đang tải danh sách người dùng...</p>
+        </div>
       ) : (
-        <div className="user-mgmt-table-wrap">
+        <div className="user-mgmt-table-wrap" style={{ maxHeight: '380px', overflowY: 'auto' }}>
           <table className="user-mgmt-table">
             <thead>
               <tr>
@@ -133,9 +138,11 @@ export default function UserManagement() {
                 </tr>
               ))}
               {users.length === 0 && (
-                <tr><td colSpan={2 + PERMISSION_COLS.length} style={{ textAlign: 'center', opacity: 0.5 }}>
-                  Chưa có người dùng nào đăng nhập.
-                </td></tr>
+                <tr>
+                  <td colSpan={2 + PERMISSION_COLS.length} style={{ textAlign: 'center', opacity: 0.5, padding: '1.5rem' }}>
+                    Chưa có người dùng nào trong hệ thống.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

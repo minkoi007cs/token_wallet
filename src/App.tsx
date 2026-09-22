@@ -7,8 +7,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 const AppWallet = lazy(() => import('./pages/AppWallet'));
 const TokenWallet = lazy(() => import('./pages/TokenWallet'));
 const PaymentSchedule = lazy(() => import('./pages/PaymentSchedule'));
-const UserManagement = lazy(() => import('./pages/UserManagement'));
-const Notes = lazy(() => import('./pages/Notes'));
 
 export default function App() {
   return (
@@ -19,6 +17,8 @@ export default function App() {
             {/* App Wallet — public read */}
             <Route index element={<AppWallet />} />
             <Route path="app-wallet" element={<AppWallet />} />
+            <Route path="code-experience" element={<AppWallet />} />
+            <Route path="notes" element={<AppWallet />} />
 
             {/* Protected pages */}
             <Route
@@ -45,12 +45,6 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-
-            {/* Admin only */}
-            <Route path="users" element={<UserManagement />} />
-
-            {/* Notes — public */}
-            <Route path="notes" element={<Notes />} />
           </Route>
         </Routes>
       </BrowserRouter>

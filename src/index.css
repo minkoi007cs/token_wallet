@@ -3158,3 +3158,80 @@ header h1 svg {
   to { transform: rotate(360deg); }
 }
 
+/* ─── App Wallet Sub-Navigation Tabs ─── */
+.app-wallet-subtabs {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding: 0.4rem;
+  background: var(--bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  width: fit-content;
+}
+
+.app-wallet-subtab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.25rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.app-wallet-subtab:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.app-wallet-subtab.active {
+  background: var(--color-accent);
+  color: #ffffff;
+  box-shadow: 0 4px 12px var(--color-accent-glow);
+}
+
+/* ─── Code Experience Prompt Header Button ─── */
+.note-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-copy-item-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--color-accent);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-copy-item-prompt:hover {
+  background: var(--color-accent-hover);
+  box-shadow: 0 0 12px var(--color-accent-glow);
+}
+
+.btn-copy-item-prompt.copied {
+  background: #10b981;
+  border-color: #10b981;
+}
+
+

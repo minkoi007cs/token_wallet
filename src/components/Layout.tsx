@@ -49,20 +49,6 @@ export default function Layout() {
                 Hạn thanh toán
               </NavLink>
             )}
-            {isAdmin && (
-              <NavLink
-                to="/users"
-                className={({ isActive }) => `tab-btn tab-admin ${isActive ? 'active' : ''}`}
-              >
-                Users
-              </NavLink>
-            )}
-            <NavLink
-              to="/notes"
-              className={({ isActive }) => `tab-btn ${isActive ? 'active' : ''}`}
-            >
-              Ghi Chú
-            </NavLink>
           </div>
         </div>
         <div className="header-actions">

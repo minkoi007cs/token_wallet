@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
+import CodeExperience from './CodeExperience';
 import { supabase } from '../utils/supabaseClient';
 import { useSyncedCollection } from '../data/useSyncedCollection';
 import {
@@ -55,9 +57,67 @@ function getAppInitials(title: string): string {
   return title.slice(0, 2).toUpperCase();
 }
 
+function getFaviconUrl(url?: string): string | null {
+  if (!url || !url.trim()) return null;
+  try {
+    const formattedUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+    const parsed = new URL(formattedUrl);
+    if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1' || !parsed.hostname.includes('.')) {
+      return null;
+    }
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(parsed.hostname)}&sz=128`;
+  } catch {
+    return null;
+  }
+}
+
+function AppIcon({ title, frontendUrl, id }: { title: string; frontendUrl?: string; id: string }) {
+  const [hasError, setHasError] = useState(false);
+  const faviconUrl = useMemo(() => getFaviconUrl(frontendUrl), [frontendUrl]);
+  const initials = getAppInitials(title);
+  const bgGradient = getAppGradient(title + id);
+
+  return (
+    <div className="store-app-icon" style={{ background: bgGradient }}>
+      {faviconUrl && !hasError ? (
+        <img
+          src={faviconUrl}
+          alt={title}
+          onError={() => setHasError(true)}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            padding: '7px',
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(4px)',
+            borderRadius: '14px',
+          }}
+        />
+      ) : (
+        initials
+      )}
+    </div>
+  );
+}
+
 export default function AppWallet() {
   const { permissions } = useAuth();
   const canEdit = !!permissions?.can_edit_app_wallet;
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+
+  const isCodeExpRoute = location.pathname.includes('/code-experience') || location.pathname.includes('/notes');
+  const activeTab = isCodeExpRoute || searchParams.get('tab') === 'code-experience' ? 'code-experience' : 'workspace';
+
+  const handleSubTabChange = (tab: 'workspace' | 'code-experience') => {
+    if (tab === 'code-experience') {
+      setSearchParams({ tab: 'code-experience' });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   const { items: projectItems, setItems: setProjectItems } = useSyncedCollection<
     Omit<AppProject, 'backlog'>,
@@ -273,7 +333,29 @@ export default function AppWallet() {
 
   return (
     <div className="app-wallet-container">
-      {/* App Store Header & Controls Card */}
+      {/* App Wallet Sub-Navigation Bar */}
+      <div className="app-wallet-subtabs">
+        <button
+          className={`app-wallet-subtab ${activeTab === 'workspace' ? 'active' : ''}`}
+          onClick={() => handleSubTabChange('workspace')}
+        >
+          <AppStoreIcon size={18} />
+          <span>App Workspace</span>
+        </button>
+        <button
+          className={`app-wallet-subtab ${activeTab === 'code-experience' ? 'active' : ''}`}
+          onClick={() => handleSubTabChange('code-experience')}
+        >
+          <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>💡</span>
+          <span>Code Experience</span>
+        </button>
+      </div>
+
+      {activeTab === 'code-experience' ? (
+        <CodeExperience />
+      ) : (
+        <>
+          {/* App Store Header & Controls Card */}
       <div className="store-header-card">
         <div className="store-header-top">
           <div className="store-title-block">
@@ -358,8 +440,6 @@ export default function AppWallet() {
       {/* 5 PER ROW APP STORE GRID */}
       <div className="store-grid">
         {filteredApps.map((app, index) => {
-          const initials = getAppInitials(app.title);
-          const bgGradient = getAppGradient(app.title + app.id);
           const backlogCount = app.backlog?.length || 0;
 
           return (
@@ -371,9 +451,7 @@ export default function AppWallet() {
               <div>
                 {/* Squircle Icon & Title Block */}
                 <div className="store-card-header">
-                  <div className="store-app-icon" style={{ background: bgGradient }}>
-                    {initials}
-                  </div>
+                  <AppIcon title={app.title} frontendUrl={app.frontendUrl} id={app.id} />
                   <div className="store-app-meta">
                     <div className="store-app-title" title={app.title}>
                       {app.title}
@@ -599,6 +677,8 @@ export default function AppWallet() {
             </div>
           </div>
         </Modal>
+      )}
+        </>
       )}
     </div>
   );
