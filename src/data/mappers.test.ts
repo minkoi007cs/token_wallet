@@ -56,7 +56,7 @@ describe('mappers round-trips', () => {
   it('round-trips AppProject fully populated (including isDisabled)', () => {
     const project: AppProject = {
       id: 'app-1',
-      title: 'Token Wallet',
+      title: "JohnnyHoang's Wallet",
       frontendUrl: 'https://example.com',
       category: 'Web',
       status: 'Production',

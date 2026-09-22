@@ -23,7 +23,7 @@ export default function Layout() {
         <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
           <h1>
             <WalletIcon />
-            My Workspace
+            JohnnyHoang's Wallet
           </h1>
           <div className="tabs">
             <NavLink

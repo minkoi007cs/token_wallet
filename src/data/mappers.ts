@@ -42,9 +42,11 @@ export interface AITool {
 
 export interface AppProjectRow {
   id: string;
-  title: string;
+  title?: string;
+  name?: string;
   url?: string;
   category?: string;
+  type?: string;
   status?: string;
   priority?: string;
   description?: string;
@@ -162,9 +164,9 @@ export function toolToRow(tool: AITool): ToolRow {
 export function rowToAppProject(row: AppProjectRow): AppProject {
   return {
     id: row.id,
-    title: row.title,
+    title: row.name || row.title || 'Untitled App',
     frontendUrl: row.url || undefined,
-    category: row.category || 'General',
+    category: row.type || row.category || 'Web App',
     status: row.status || 'Development',
     priority: row.priority || 'Medium',
     description: row.description || undefined,
@@ -175,8 +177,10 @@ export function rowToAppProject(row: AppProjectRow): AppProject {
 export function appProjectToRow(project: AppProject): AppProjectRow {
   return {
     id: project.id,
+    name: project.title,
     title: project.title,
     url: project.frontendUrl || '',
+    type: project.category,
     category: project.category,
     status: project.status,
     priority: project.priority,

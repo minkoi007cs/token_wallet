@@ -556,7 +556,7 @@ export default function AppWallet() {
               className="input-text"
               value={modalForm.title || ''}
               onChange={(e) => setModalForm({ ...modalForm, title: e.target.value })}
-              placeholder="VD: Token Wallet, Payment App..."
+              placeholder="VD: JohnnyHoang's Wallet, Payment App..."
             />
           </div>
 

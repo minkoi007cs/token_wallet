@@ -1,4 +1,4 @@
--- TokenWalet Database Schema and Row Level Security (RLS) Policies
+-- JohnnyHoang's Wallet Database Schema and Row Level Security (RLS) Policies
 -- Project prefix: tkw_
 
 -- 1. Tables DDL
