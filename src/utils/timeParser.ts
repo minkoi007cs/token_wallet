@@ -132,7 +132,6 @@ export function parseResetTime(input: string): number | null {
   let totalMs = 0;
   let parsedAny = false;
 
-  // Reset lastIndex for global regex
   RELATIVE_REGEX.lastIndex = 0;
   let match: RegExpExecArray | null;
   while ((match = RELATIVE_REGEX.exec(cleanInput)) !== null) {
@@ -282,4 +281,19 @@ export function getRemainingDurationString(targetTime: number, now: number = Dat
   if (mins > 0) parts.push(`${mins} min`);
 
   return parts.length > 0 ? parts.join(' ') : '0 min';
+}
+
+/**
+ * Advances a reset timestamp forward in fixed step increments (default 5 hours)
+ * until it is strictly greater than `now`.
+ */
+export function rollForward(
+  resetTime: number,
+  now: number = Date.now(),
+  stepMs: number = 5 * 3600 * 1000
+): number {
+  if (resetTime > now) return resetTime;
+  const overdueMs = now - resetTime;
+  const steps = Math.floor(overdueMs / stepMs) + 1;
+  return resetTime + steps * stepMs;
 }

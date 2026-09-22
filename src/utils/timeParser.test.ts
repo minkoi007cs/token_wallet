@@ -6,6 +6,7 @@ import {
   formatVerboseCountdown,
   formatVerboseResetTime,
   getRemainingDurationString,
+  rollForward,
 } from './timeParser';
 
 describe('timeParser', () => {
@@ -83,6 +84,32 @@ describe('timeParser', () => {
     it('getRemainingDurationString breaks down days/hours/min', () => {
       const target = baseNow + (49 * 3600 + 59 * 60) * 1000;
       expect(getRemainingDurationString(target, baseNow)).toBe('2 days 1 hour 59 min');
+    });
+  });
+
+  describe('rollForward', () => {
+    const now = 1700000000000;
+    const stepMs = 5 * 3600 * 1000; // 5h
+
+    it('returns resetTime unchanged if resetTime > now', () => {
+      const future = now + 1000;
+      expect(rollForward(future, now, stepMs)).toBe(future);
+    });
+
+    it('advances by one step if overdue by less than one step', () => {
+      const past = now - 1000;
+      expect(rollForward(past, now, stepMs)).toBe(past + stepMs);
+    });
+
+    it('advances by multiple steps if overdue by several steps', () => {
+      const past = now - 12 * stepMs;
+      const result = rollForward(past, now, stepMs);
+      expect(result).toBeGreaterThan(now);
+      expect(result).toBe(past + 13 * stepMs);
+    });
+
+    it('advances by one step if resetTime === now', () => {
+      expect(rollForward(now, now, stepMs)).toBe(now + stepMs);
     });
   });
 });

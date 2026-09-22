@@ -1,12 +1,14 @@
+import { lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
-import TokenWallet from './pages/TokenWallet';
-import AppWallet from './pages/AppWallet';
-import PaymentSchedule from './pages/PaymentSchedule';
-import UserManagement from './pages/UserManagement';
-import Notes from './pages/Notes';
+
+const AppWallet = lazy(() => import('./pages/AppWallet'));
+const TokenWallet = lazy(() => import('./pages/TokenWallet'));
+const PaymentSchedule = lazy(() => import('./pages/PaymentSchedule'));
+const UserManagement = lazy(() => import('./pages/UserManagement'));
+const Notes = lazy(() => import('./pages/Notes'));
 
 export default function App() {
   return (
@@ -14,7 +16,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Layout />}>
-            {/* App Wallet — public read, no login required */}
+            {/* App Wallet — public read */}
             <Route index element={<AppWallet />} />
             <Route path="app-wallet" element={<AppWallet />} />
 
